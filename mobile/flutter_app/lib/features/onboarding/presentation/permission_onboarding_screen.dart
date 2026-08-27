@@ -4,7 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_dimensions.dart';
 import '../../../core/services/device_channel_service.dart';
-import '../../home/presentation/home_screen.dart';
+import '../../home/presentation/responsive_scaffold.dart';
 
 class PermissionOnboardingScreen extends StatefulWidget {
   final VoidCallback? onComplete;
@@ -90,7 +90,7 @@ class _PermissionOnboardingScreenState extends State<PermissionOnboardingScreen>
       widget.onComplete!();
     } else {
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
       );
     }
   }
@@ -110,12 +110,28 @@ class _PermissionOnboardingScreenState extends State<PermissionOnboardingScreen>
               Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: const BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: AppDimensions.roundedMd,
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withAlpha(100),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: const Icon(Icons.radar_rounded, color: Colors.white, size: 28),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/app_logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(width: 14),
                   const Expanded(
@@ -171,7 +187,7 @@ class _PermissionOnboardingScreenState extends State<PermissionOnboardingScreen>
               ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
