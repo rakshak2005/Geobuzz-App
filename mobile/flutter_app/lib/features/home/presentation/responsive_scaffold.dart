@@ -31,7 +31,12 @@ class ResponsiveScaffold extends StatefulWidget {
 class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   int _selectedIndex = 0; // 0: Dashboard, 1: Automations, 2: Map, 3: Activity, 4: Analytics, 5: Settings
   final TextEditingController _searchController = TextEditingController();
+  final MapController _radarMapController = MapController();
+  final MapController _canvasMapController = MapController();
   String _automationFilter = 'ALL';
+  LatLng? _currentLocation;
+  double? _currentAccuracy;
+  bool _isLocating = false;
 
   @override
   void initState() {
@@ -40,11 +45,55 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       context.read<RuleProvider>().loadRules();
       context.read<HistoryProvider>().loadHistory();
       RuleEngine.instance.initialize();
+      _locateDevice(animateMap: true);
     });
+
+    // Listen to real-time position updates
+    LocationService.instance.currentPosition.addListener(_onPositionUpdated);
+  }
+
+  void _onPositionUpdated() {
+    final pos = LocationService.instance.currentPosition.value;
+    if (pos != null && mounted) {
+      setState(() {
+        _currentLocation = LatLng(pos.latitude, pos.longitude);
+        _currentAccuracy = pos.accuracy;
+      });
+    }
+  }
+
+  Future<void> _locateDevice({bool animateMap = true}) async {
+    if (_isLocating) return;
+    setState(() => _isLocating = true);
+    try {
+      final pos = await LocationService.instance.getCurrentLocation();
+      if (pos != null && mounted) {
+        final newCenter = LatLng(pos.latitude, pos.longitude);
+        setState(() {
+          _currentLocation = newCenter;
+          _currentAccuracy = pos.accuracy;
+          _isLocating = false;
+        });
+
+        if (animateMap) {
+          try {
+            _radarMapController.move(newCenter, 15.0);
+          } catch (_) {}
+          try {
+            _canvasMapController.move(newCenter, 15.0);
+          } catch (_) {}
+        }
+      } else {
+        if (mounted) setState(() => _isLocating = false);
+      }
+    } catch (_) {
+      if (mounted) setState(() => _isLocating = false);
+    }
   }
 
   @override
   void dispose() {
+    LocationService.instance.currentPosition.removeListener(_onPositionUpdated);
     _searchController.dispose();
     super.dispose();
   }
@@ -800,60 +849,195 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     );
   }
 
-  Widget _buildLiveRadarMapWidget(List<RuleModel> rules) {
+  Widget _buildLiveRadarMapWidget(List<RuleModel> rules, {bool isFullCanvas = false}) {
     final defaultPos = const LatLng(12.9716, 77.5946);
+    final mapCenter = _currentLocation ??
+        (rules.isNotEmpty
+            ? LatLng(rules.first.location.latitude, rules.first.location.longitude)
+            : defaultPos);
+
+    final mapCtrl = isFullCanvas ? _canvasMapController : _radarMapController;
 
     return Container(
-      height: 380,
+      height: isFullCanvas ? null : 380,
       decoration: BoxDecoration(
         color: AppColors.surfaceDark,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderDark),
       ),
       clipBehavior: Clip.antiAlias,
-      child: FlutterMap(
-        options: MapOptions(
-          initialCenter: rules.isNotEmpty
-              ? LatLng(rules.first.location.latitude, rules.first.location.longitude)
-              : defaultPos,
-          initialZoom: 14.0,
-        ),
+      child: Stack(
         children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.geobuzz.geobuzz',
+          FlutterMap(
+            mapController: mapCtrl,
+            options: MapOptions(
+              initialCenter: mapCenter,
+              initialZoom: 14.5,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.geobuzz.geobuzz',
+              ),
+
+              // Geofence Circles
+              CircleLayer(
+                circles: [
+                  // 1. Current Location Radar Ripple
+                  if (_currentLocation != null)
+                    CircleMarker(
+                      point: _currentLocation!,
+                      radius: _currentAccuracy != null && _currentAccuracy! > 20 ? _currentAccuracy! : 45.0,
+                      useRadiusInMeter: true,
+                      color: AppColors.accent.withAlpha(30),
+                      borderColor: AppColors.accent,
+                      borderStrokeWidth: 1.5,
+                    ),
+
+                  // 2. Rule Geofence Zones
+                  ...rules.map((r) {
+                    return CircleMarker(
+                      point: LatLng(r.location.latitude, r.location.longitude),
+                      radius: r.radius,
+                      useRadiusInMeter: true,
+                      color: AppColors.primary.withAlpha(40),
+                      borderColor: AppColors.accent,
+                      borderStrokeWidth: 2,
+                    );
+                  }),
+                ],
+              ),
+
+              // Markers
+              MarkerLayer(
+                markers: [
+                  // 1. Current User Device Location Marker
+                  if (_currentLocation != null)
+                    Marker(
+                      point: _currentLocation!,
+                      width: 44,
+                      height: 44,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: AppColors.accent.withAlpha(40),
+                            ),
+                          ),
+                          Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: AppColors.accent,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.accent.withAlpha(160),
+                                  blurRadius: 10,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // 2. Automation Rule Markers
+                  ...rules.map((r) {
+                    return Marker(
+                      point: LatLng(r.location.latitude, r.location.longitude),
+                      width: 36,
+                      height: 36,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryDark,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          boxShadow: [
+                            BoxShadow(color: AppColors.primary.withAlpha(128), blurRadius: 8),
+                          ],
+                        ),
+                        child: Icon(_getActionIcon(r.action.type), color: Colors.white, size: 18),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ],
           ),
-          CircleLayer(
-            circles: rules.map((r) {
-              return CircleMarker(
-                point: LatLng(r.location.latitude, r.location.longitude),
-                radius: r.radius,
-                useRadiusInMeter: true,
-                color: AppColors.primary.withAlpha(40),
-                borderColor: AppColors.accent,
-                borderStrokeWidth: 2,
-              );
-            }).toList(),
+
+          // Top Info Badge: GPS Status & Coordinates
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.bgDark.withAlpha(220),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.borderDark),
+                boxShadow: [
+                  BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 6),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      color: _currentLocation != null ? AppColors.success : AppColors.warning,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _currentLocation != null
+                        ? 'Live GPS • ${_currentLocation!.latitude.toStringAsFixed(4)}, ${_currentLocation!.longitude.toStringAsFixed(4)}'
+                        : 'Locating Device...',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
           ),
-          MarkerLayer(
-            markers: rules.map((r) {
-              return Marker(
-                point: LatLng(r.location.latitude, r.location.longitude),
-                width: 36,
-                height: 36,
+
+          // Floating "Locate Me" GPS Center Button
+          Positioned(
+            bottom: 12,
+            right: 12,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _locateDevice(animateMap: true),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryDark,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2),
+                    color: AppColors.surfaceDark.withAlpha(240),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppColors.borderDark),
                     boxShadow: [
-                      BoxShadow(color: AppColors.primary.withAlpha(128), blurRadius: 8),
+                      BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 8, offset: const Offset(0, 3)),
                     ],
                   ),
-                  child: Icon(_getActionIcon(r.action.type), color: Colors.white, size: 18),
+                  child: _isLocating
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
+                        )
+                      : const Icon(Icons.my_location_rounded, color: AppColors.accent, size: 20),
                 ),
-              );
-            }).toList(),
+              ),
+            ),
           ),
         ],
       ),
@@ -975,7 +1159,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   // ==========================================
   Widget _buildMapCanvasView({required bool isDesktop}) {
     final ruleProvider = context.watch<RuleProvider>();
-    return _buildLiveRadarMapWidget(ruleProvider.rules);
+    return _buildLiveRadarMapWidget(ruleProvider.rules, isFullCanvas: true);
   }
 
   // ==========================================
