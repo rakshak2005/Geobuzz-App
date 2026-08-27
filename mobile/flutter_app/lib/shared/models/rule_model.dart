@@ -47,6 +47,24 @@ class RuleModel extends Equatable {
     };
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'name': name,
+      'location': location.toMap(),
+      'radius': radius,
+      'trigger': trigger.toMap(),
+      'action': action.toMap(),
+      'isActive': isActive,
+      'isSynced': isSynced,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
+    };
+  }
+
+  factory RuleModel.fromJson(Map<String, dynamic> json) => RuleModel.fromMap(json);
+
   factory RuleModel.fromMap(Map<String, dynamic> map) {
     Map<String, dynamic> locMap;
     if (map['location_json'] != null) {
@@ -77,20 +95,20 @@ class RuleModel extends Equatable {
 
     return RuleModel(
       id: map['id']?.toString() ?? map['_id']?.toString() ?? '',
-      userId: map['userId']?.toString(),
+      userId: map['userId']?.toString() ?? map['user_id']?.toString(),
       name: map['name'] as String? ?? 'Untitled Rule',
       location: GeoLocation.fromMap(locMap),
       radius: (map['radius'] as num?)?.toDouble() ?? 100.0,
       trigger: RuleTrigger.fromMap(trigMap),
       action: RuleAction.fromMap(actMap),
-      isActive: map['isActive'] == 1 || map['isActive'] == true,
+      isActive: map['isActive'] == 1 || map['isActive'] == true || map['is_active'] == 1 || map['is_active'] == true,
       isSynced: map['isSynced'] == 1 || map['isSynced'] == true,
       createdAt: map['createdAt'] != null
           ? DateTime.tryParse(map['createdAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+          : (map['created_at'] != null ? DateTime.tryParse(map['created_at'].toString()) ?? DateTime.now() : DateTime.now()),
       updatedAt: map['updatedAt'] != null
           ? DateTime.tryParse(map['updatedAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+          : (map['updated_at'] != null ? DateTime.tryParse(map['updated_at'].toString()) ?? DateTime.now() : DateTime.now()),
     );
   }
 

@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../shared/models/rule_model.dart';
 import '../../shared/models/geofence_state.dart';
 import '../../shared/models/history_item.dart';
@@ -10,11 +13,16 @@ class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
   static Database? _database;
 
+  static const String _webRulesKey = 'geobuzz_web_rules_v1';
+  static const String _webHistoryKey = 'geobuzz_web_history_v1';
+  static const String _webStatesKey = 'geobuzz_web_states_v1';
+
   // Web in-memory fallback cache
   final List<RuleModel> _webRules = [];
   final Map<String, GeofenceState> _webStates = {};
   final List<HistoryItem> _webHistory = [];
   final Map<String, String> _webDeviceState = {};
+  bool _webLoaded = false;
 
   DatabaseHelper._init();
 
@@ -86,11 +94,63 @@ class DatabaseHelper {
     ''');
   }
 
+  // =================== WEB PERSISTENCE HELPERS ===================
+  Future<void> _ensureWebLoaded() async {
+    if (!kIsWeb || _webLoaded) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final rulesStr = prefs.getString(_webRulesKey);
+      if (rulesStr != null && rulesStr.isNotEmpty) {
+        final list = jsonDecode(rulesStr) as List;
+        _webRules.clear();
+        for (final item in list) {
+          _webRules.add(RuleModel.fromMap(Map<String, dynamic>.from(item)));
+        }
+      }
+
+      final historyStr = prefs.getString(_webHistoryKey);
+      if (historyStr != null && historyStr.isNotEmpty) {
+        final list = jsonDecode(historyStr) as List;
+        _webHistory.clear();
+        for (final item in list) {
+          _webHistory.add(HistoryItem.fromMap(Map<String, dynamic>.from(item)));
+        }
+      }
+      _webLoaded = true;
+    } catch (e) {
+      debugPrint('Error loading web storage: $e');
+    }
+  }
+
+  Future<void> _persistWebRules() async {
+    if (!kIsWeb) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = _webRules.map((r) => r.toMap()).toList();
+      await prefs.setString(_webRulesKey, jsonEncode(list));
+    } catch (e) {
+      debugPrint('Error persisting web rules: $e');
+    }
+  }
+
+  Future<void> _persistWebHistory() async {
+    if (!kIsWeb) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final list = _webHistory.map((h) => h.toMap()).toList();
+      await prefs.setString(_webHistoryKey, jsonEncode(list));
+    } catch (e) {
+      debugPrint('Error persisting web history: $e');
+    }
+  }
+
   // =================== RULES CRUD ===================
   Future<int> insertRule(RuleModel rule) async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       _webRules.removeWhere((r) => r.id == rule.id);
       _webRules.insert(0, rule);
+      await _persistWebRules();
       return 1;
     }
     final db = (await database)!;
@@ -103,6 +163,7 @@ class DatabaseHelper {
 
   Future<List<RuleModel>> getAllRules() async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       return List.from(_webRules);
     }
     final db = (await database)!;
@@ -112,6 +173,7 @@ class DatabaseHelper {
 
   Future<List<RuleModel>> getActiveRules() async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       return _webRules.where((r) => r.isActive).toList();
     }
     final db = (await database)!;
@@ -126,6 +188,7 @@ class DatabaseHelper {
 
   Future<RuleModel?> getRuleById(String id) async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       try {
         return _webRules.firstWhere((r) => r.id == id);
       } catch (_) {
@@ -147,12 +210,15 @@ class DatabaseHelper {
 
   Future<int> updateRule(RuleModel rule) async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       final index = _webRules.indexWhere((r) => r.id == rule.id);
       if (index != -1) {
         _webRules[index] = rule;
-        return 1;
+      } else {
+        _webRules.insert(0, rule);
       }
-      return 0;
+      await _persistWebRules();
+      return 1;
     }
     final db = (await database)!;
     return await db.update(
@@ -165,26 +231,31 @@ class DatabaseHelper {
 
   Future<int> deleteRule(String id) async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       _webRules.removeWhere((r) => r.id == id);
       _webStates.remove(id);
+      await _persistWebRules();
       return 1;
     }
     final db = (await database)!;
-    await db.delete('geofence_states', where: 'ruleId = ?', whereArgs: [id]);
-    return await db.delete('rules', where: 'id = ?', whereArgs: [id]);
+    await deleteGeofenceState(id);
+    return await db.delete(
+      'rules',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<int> toggleRuleStatus(String id, bool isActive) async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       final index = _webRules.indexWhere((r) => r.id == id);
       if (index != -1) {
-        _webRules[index] = _webRules[index].copyWith(
-          isActive: isActive,
-          updatedAt: DateTime.now(),
-        );
-        return 1;
+        final r = _webRules[index];
+        _webRules[index] = r.copyWith(isActive: isActive, updatedAt: DateTime.now());
+        await _persistWebRules();
       }
-      return 0;
+      return 1;
     }
     final db = (await database)!;
     return await db.update(
@@ -195,7 +266,7 @@ class DatabaseHelper {
     );
   }
 
-  // =================== GEOFENCE STATE CRUD ===================
+  // =================== GEOFENCE STATES ===================
   Future<void> saveGeofenceState(GeofenceState state) async {
     if (kIsWeb) {
       _webStates[state.ruleId] = state;
@@ -231,38 +302,51 @@ class DatabaseHelper {
       return Map.from(_webStates);
     }
     final db = (await database)!;
-    final result = await db.query('geofence_states');
-    final map = <String, GeofenceState>{};
-    for (var row in result) {
-      final state = GeofenceState.fromMap(row);
-      map[state.ruleId] = state;
+    final maps = await db.query('geofence_states');
+    final result = <String, GeofenceState>{};
+    for (final map in maps) {
+      final state = GeofenceState.fromMap(map);
+      result[state.ruleId] = state;
     }
-    return map;
+    return result;
+  }
+
+  Future<int> deleteGeofenceState(String ruleId) async {
+    if (kIsWeb) {
+      _webStates.remove(ruleId);
+      return 1;
+    }
+    final db = (await database)!;
+    return await db.delete(
+      'geofence_states',
+      where: 'ruleId = ?',
+      whereArgs: [ruleId],
+    );
   }
 
   // =================== HISTORY CRUD ===================
   Future<int> insertHistory(HistoryItem item) async {
     if (kIsWeb) {
+      await _ensureWebLoaded();
       _webHistory.insert(0, item);
+      await _persistWebHistory();
       return 1;
     }
     final db = (await database)!;
-    return await db.insert(
-      'history',
-      item.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    return await db.insert('history', item.toMap());
   }
 
-  Future<List<HistoryItem>> getAllHistory({int limit = 50}) async {
+  Future<List<HistoryItem>> getAllHistory({int limit = 50, int offset = 0}) async {
     if (kIsWeb) {
-      return _webHistory.take(limit).toList();
+      await _ensureWebLoaded();
+      return _webHistory.skip(offset).take(limit).toList();
     }
     final db = (await database)!;
     final result = await db.query(
       'history',
       orderBy: 'timestamp DESC',
       limit: limit,
+      offset: offset,
     );
     return result.map((json) => HistoryItem.fromMap(json)).toList();
   }
@@ -270,13 +354,14 @@ class DatabaseHelper {
   Future<int> clearHistory() async {
     if (kIsWeb) {
       _webHistory.clear();
+      await _persistWebHistory();
       return 1;
     }
     final db = (await database)!;
     return await db.delete('history');
   }
 
-  // =================== KEY VALUE STORE ===================
+  // =================== DEVICE STATE KV ===================
   Future<void> setDeviceState(String key, String value) async {
     if (kIsWeb) {
       _webDeviceState[key] = value;
