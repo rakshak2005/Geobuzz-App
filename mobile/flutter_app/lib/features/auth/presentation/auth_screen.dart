@@ -20,6 +20,19 @@ class _AuthScreenState extends State<AuthScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
+
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -33,6 +46,16 @@ class _AuthScreenState extends State<AuthScreen> {
         _passwordController.text.trim(),
       );
     } else {
+      if (_passwordController.text != _confirmPasswordController.text) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Passwords do not match'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
       success = await authProvider.register(
         _nameController.text.trim(),
         _emailController.text.trim(),
@@ -42,6 +65,13 @@ class _AuthScreenState extends State<AuthScreen> {
 
     if (mounted) {
       if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_isLogin ? 'Welcome back!' : 'Account registered successfully!'),
+            backgroundColor: AppColors.success,
+            duration: const Duration(seconds: 2),
+          ),
+        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
         );
@@ -77,8 +107,8 @@ class _AuthScreenState extends State<AuthScreen> {
                     // Official App Brand Logo
                     Center(
                       child: Container(
-                        width: 84,
-                        height: 84,
+                        width: 86,
+                        height: 86,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           boxShadow: [
@@ -109,7 +139,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           TextSpan(
                             text: 'Geo',
                             style: TextStyle(
-                              fontSize: 30,
+                              fontSize: 32,
                               fontWeight: FontWeight.w900,
                               color: Colors.white,
                               letterSpacing: -0.5,
@@ -118,7 +148,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           TextSpan(
                             text: 'Buzz',
                             style: TextStyle(
-                              fontSize: 30,
+                              fontSize: 32,
                               fontWeight: FontWeight.w900,
                               color: AppColors.accent,
                               letterSpacing: -0.5,
@@ -158,8 +188,8 @@ class _AuthScreenState extends State<AuthScreen> {
                         border: Border.all(color: AppColors.borderDark),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withAlpha(100),
-                            blurRadius: 20,
+                            color: Colors.black.withAlpha(120),
+                            blurRadius: 24,
                             offset: const Offset(0, 8),
                           ),
                         ],
@@ -176,13 +206,17 @@ class _AuthScreenState extends State<AuthScreen> {
                               children: [
                                 Expanded(
                                   child: InkWell(
-                                    onTap: () => setState(() => _isLogin = true),
+                                    onTap: () {
+                                      setState(() {
+                                        _isLogin = true;
+                                      });
+                                    },
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(vertical: 12),
                                       decoration: BoxDecoration(
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: _isLogin ? AppColors.primary : Colors.transparent,
+                                            color: _isLogin ? AppColors.accent : Colors.transparent,
                                             width: 2,
                                           ),
                                         ),
@@ -192,6 +226,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 15,
                                           color: _isLogin ? Colors.white : AppColors.textSecondaryDark,
                                         ),
                                       ),
@@ -200,13 +235,17 @@ class _AuthScreenState extends State<AuthScreen> {
                                 ),
                                 Expanded(
                                   child: InkWell(
-                                    onTap: () => setState(() => _isLogin = false),
+                                    onTap: () {
+                                      setState(() {
+                                        _isLogin = false;
+                                      });
+                                    },
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(vertical: 12),
                                       decoration: BoxDecoration(
                                         border: Border(
                                           bottom: BorderSide(
-                                            color: !_isLogin ? AppColors.primary : Colors.transparent,
+                                            color: !_isLogin ? AppColors.accent : Colors.transparent,
                                             width: 2,
                                           ),
                                         ),
@@ -216,6 +255,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
+                                          fontSize: 15,
                                           color: !_isLogin ? Colors.white : AppColors.textSecondaryDark,
                                         ),
                                       ),
@@ -252,7 +292,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             validator: (val) {
                               if (val == null || val.trim().isEmpty) return 'Please enter email';
-                              if (!val.contains('@')) return 'Please enter valid email';
+                              if (!val.contains('@') || !val.contains('.')) return 'Please enter a valid email address';
                               return null;
                             },
                           ),
@@ -261,11 +301,19 @@ class _AuthScreenState extends State<AuthScreen> {
                           // Password Field
                           TextFormField(
                             controller: _passwordController,
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               labelText: 'Password',
-                              prefixIcon: Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight),
+                              prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight),
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                  color: AppColors.textSecondaryDark,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                              ),
                             ),
                             validator: (val) {
                               if (val == null || val.isEmpty) return 'Please enter password';
@@ -273,11 +321,45 @@ class _AuthScreenState extends State<AuthScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 16),
 
-                          // Submit Button
+                          // Confirm Password Field (Register only)
+                          if (!_isLogin) ...[
+                            TextFormField(
+                              controller: _confirmPasswordController,
+                              obscureText: _obscureConfirmPassword,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                labelText: 'Confirm Password',
+                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscureConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+                                    color: AppColors.textSecondaryDark,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                ),
+                              ),
+                              validator: (val) {
+                                if (val == null || val.isEmpty) return 'Please confirm your password';
+                                if (val != _passwordController.text) return 'Passwords do not match';
+                                return null;
+                              },
+                            ),
+                            const SizedBox(height: 20),
+                          ],
+
+                          const SizedBox(height: 8),
+
+                          // Submit CTA Button
                           ElevatedButton(
                             onPressed: authProvider.isLoading ? null : _submit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: const RoundedRectangleBorder(borderRadius: AppDimensions.roundedMd),
+                            ),
                             child: authProvider.isLoading
                                 ? const SizedBox(
                                     height: 20,
@@ -285,25 +367,19 @@ class _AuthScreenState extends State<AuthScreen> {
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                   )
                                 : Text(
-                                    _isLogin ? 'Sign In to GeoBuzz' : 'Create GeoBuzz Account',
+                                    _isLogin ? 'Sign In to GeoBuzz' : 'Create Account',
                                     style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                                   ),
                           ),
                           const SizedBox(height: 16),
 
-                          // Guest / Offline Mode Entry
-                          TextButton(
-                            onPressed: () async {
-                              await authProvider.continueAsGuest();
-                              if (mounted) {
-                                Navigator.of(context).pushReplacement(
-                                  MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
-                                );
-                              }
-                            },
-                            child: const Text(
-                              'Continue as Guest (Local Workspace)',
-                              style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
+                          // Help / info footer
+                          Center(
+                            child: Text(
+                              _isLogin
+                                  ? 'Need an account? Switch to Register above.'
+                                  : 'Already registered? Switch to Sign In above.',
+                              style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 12),
                             ),
                           ),
                         ],

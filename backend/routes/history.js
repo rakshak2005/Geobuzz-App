@@ -2,7 +2,8 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { protect } = require('../middleware/auth');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const uuidv4 = () => crypto.randomUUID();
 
 // @route   POST /api/history
 // @desc    Create history entry

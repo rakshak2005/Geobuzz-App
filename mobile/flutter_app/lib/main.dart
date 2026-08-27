@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'core/constants/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/domain/auth_provider.dart';
+import 'features/auth/presentation/auth_screen.dart';
 import 'features/rules/domain/rule_provider.dart';
 import 'features/history/domain/history_provider.dart';
 import 'features/home/presentation/responsive_scaffold.dart';
@@ -75,13 +76,14 @@ class _SplashScreenState extends State<SplashScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => PermissionOnboardingScreen(
-            onComplete: () async {
-              if (!authProvider.isAuthenticated) {
-                await authProvider.continueAsGuest();
-              }
+            onComplete: () {
               if (mounted) {
                 Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
+                  MaterialPageRoute(
+                    builder: (_) => authProvider.isAuthenticated
+                        ? const ResponsiveScaffold()
+                        : const AuthScreen(),
+                  ),
                 );
               }
             },
@@ -89,12 +91,13 @@ class _SplashScreenState extends State<SplashScreen> {
         ),
       );
     } else {
-      if (!authProvider.isAuthenticated) {
-        await authProvider.continueAsGuest();
-      }
       if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
+          MaterialPageRoute(
+            builder: (_) => authProvider.isAuthenticated
+                ? const ResponsiveScaffold()
+                : const AuthScreen(),
+          ),
         );
       }
     }
