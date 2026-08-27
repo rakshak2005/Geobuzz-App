@@ -1,46 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
+const db = require('../config/db');
 const { protect } = require('../middleware/auth');
 
-// @route   GET /api/users/preferences
-// @desc    Get user preferences
+// @route   GET /api/users/me
+// @desc    Get user profile
 // @access  Private
-router.get('/preferences', protect, async (req, res) => {
+router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
-    res.json({
-      success: true,
-      data: user.preferences
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching preferences',
-      error: error.message
-    });
-  }
-});
-
-// @route   PUT /api/users/preferences
-// @desc    Update user preferences
-// @access  Private
-router.put('/preferences', protect, async (req, res) => {
-  try {
-    const user = await User.findByIdAndUpdate(
-      req.user.id,
-      { preferences: req.body },
-      { new: true, runValidators: true }
+    const result = await db.query(
+      'SELECT id, name, email, created_at FROM users WHERE id = $1',
+      [req.user.id]
     );
 
-    if (!user) {
+    if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
         message: 'User not found'
@@ -49,12 +22,12 @@ router.put('/preferences', protect, async (req, res) => {
 
     res.json({
       success: true,
-      data: user.preferences
+      data: result.rows[0]
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error updating preferences',
+      message: 'Error fetching profile',
       error: error.message
     });
   }

@@ -1,8 +1,8 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 require('dotenv').config();
 
+const db = require('./config/db');
 const authRoutes = require('./routes/auth');
 const ruleRoutes = require('./routes/rules');
 const historyRoutes = require('./routes/history');
@@ -14,19 +14,10 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    const mongoURI = process.env.MONGO_URI || 'mongodb://localhost:27017/geobuzz';
-    await mongoose.connect(mongoURI);
-    console.log('MongoDB connected successfully');
-  } catch (error) {
-    console.error('MongoDB connection error:', error.message);
-    // Don't exit - allow app to run without DB for development
-  }
-};
-
-connectDB();
+// Initialize PostgreSQL Database Connection and Schema
+db.initializeDatabase().catch((err) => {
+  console.error('Database initialization error:', err.message);
+});
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -36,7 +27,11 @@ app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    database: 'Neon PostgreSQL (Connected)',
+    timestamp: new Date().toISOString(),
+  });
 });
 
 // Error handling middleware
@@ -45,7 +40,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({
     success: false,
     message: 'Internal server error',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
   });
 });
 

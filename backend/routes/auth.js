@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User');
-const { protect } = require('../middleware/auth');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const db = require('../config/db');
+const { protect } = require('../middleware/auth');
 
 // Generate JWT Token
 const generateToken = (id) => {
-  const secret = process.env.JWT_SECRET || 'geobuzz_default_super_secret_jwt_key_2026';
+  const secret = process.env.JWT_SECRET || 'geobuzz_production_secret_key_2026_super_secure_jwt';
   return jwt.sign({ id }, secret, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    expiresIn: process.env.JWT_EXPIRES_IN || '30d'
   });
 };
 
@@ -19,32 +20,47 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, and password'
+      });
+    }
+
     // Check if user exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (existing.rows.length > 0) {
       return res.status(400).json({
         success: false,
         message: 'User already exists with this email'
       });
     }
 
-    // Create user
-    const user = await User.create({ name, email, password });
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Insert user
+    const result = await db.query(
+      'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, created_at',
+      [name.trim(), email.toLowerCase().trim(), hashedPassword]
+    );
+
+    const user = result.rows[0];
+    const token = generateToken(user.id);
 
     res.status(201).json({
       success: true,
-      data: {
-        _id: user._id,
+      token,
+      user: {
+        id: user.id,
         name: user.name,
         email: user.email,
-        preferences: user.preferences,
-        token
+        createdAt: user.created_at
       }
     });
   } catch (error) {
+    console.error('Register error:', error);
     res.status(500).json({
       success: false,
       message: 'Error creating user',
@@ -60,7 +76,6 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate email and password
     if (!email || !password) {
       return res.status(400).json({
         success: false,
@@ -69,37 +84,39 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user
-    const user = await User.findOne({ email }).select('+password');
-    if (!user) {
+    const result = await db.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    if (result.rows.length === 0) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid email or password'
       });
     }
 
+    const user = result.rows[0];
+
     // Check password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid credentials'
+        message: 'Invalid email or password'
       });
     }
 
-    // Generate token
-    const token = generateToken(user._id);
+    const token = generateToken(user.id);
 
     res.json({
       success: true,
-      data: {
-        _id: user._id,
+      token,
+      user: {
+        id: user.id,
         name: user.name,
         email: user.email,
-        preferences: user.preferences,
-        token
+        createdAt: user.created_at
       }
     });
   } catch (error) {
+    console.error('Login error:', error);
     res.status(500).json({
       success: false,
       message: 'Error logging in',
@@ -109,27 +126,18 @@ router.post('/login', async (req, res) => {
 });
 
 // @route   GET /api/auth/me
-// @desc    Get current user
+// @desc    Get current user profile
 // @access  Private
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
-    }
-
     res.json({
       success: true,
-      data: user
+      data: req.user
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      message: 'Error fetching user',
-      error: error.message
+      message: 'Error fetching profile'
     });
   }
 });

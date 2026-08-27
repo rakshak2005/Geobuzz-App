@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const db = require('../config/db');
 
 // Protect routes
 exports.protect = async (req, res, next) => {
@@ -18,20 +18,20 @@ exports.protect = async (req, res, next) => {
       });
     }
 
-    // Verify token with fallback secret for dev
-    const secret = process.env.JWT_SECRET || 'geobuzz_default_super_secret_jwt_key_2026';
+    // Verify token
+    const secret = process.env.JWT_SECRET || 'geobuzz_production_secret_key_2026_super_secure_jwt';
     const decoded = jwt.verify(token, secret);
 
-    // Find user
-    const user = await User.findById(decoded.id);
-    if (!user) {
+    // Find user in PostgreSQL
+    const { rows } = await db.query('SELECT id, name, email, created_at FROM users WHERE id = $1', [decoded.id]);
+    if (rows.length === 0) {
       return res.status(401).json({
         success: false,
         message: 'User not found'
       });
     }
 
-    req.user = user;
+    req.user = rows[0];
     next();
   } catch (error) {
     return res.status(401).json({
@@ -39,17 +39,4 @@ exports.protect = async (req, res, next) => {
       message: 'Not authorized to access this route'
     });
   }
-};
-
-// Optional: Check if user owns the resource
-exports.authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Not authorized to perform this action'
-      });
-    }
-    next();
-  };
 };
