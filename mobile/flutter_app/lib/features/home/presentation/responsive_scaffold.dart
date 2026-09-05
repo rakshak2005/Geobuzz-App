@@ -170,11 +170,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                 ),
 
-                // 2. SPATIAL CONTROL SECTION
+                // 2. WORKSPACE SECTION
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                   child: Text(
-                    'SPATIAL CONTROL',
+                    'WORKSPACE',
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -184,10 +184,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                _buildSidebarNavButton(0, 'Overview', Icons.grid_view_rounded),
+                _buildSidebarNavButton(0, 'Home', Icons.grid_view_rounded),
                 _buildSidebarNavButton(1, 'Automations', Icons.bolt_rounded),
-                _buildSidebarNavButton(2, 'Map canvas', Icons.map_outlined),
-                _buildSidebarNavButton(3, 'Activity stream', Icons.show_chart_rounded),
+                _buildSidebarNavButton(2, 'Map', Icons.map_outlined),
+                _buildSidebarNavButton(3, 'Activity', Icons.show_chart_rounded),
 
                 const SizedBox(height: 28),
 
@@ -209,7 +209,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
                 const Spacer(),
 
-                // 4. GPS Stream Live Switch Card
+                // 4. GPS Status Switch Card
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   child: Container(
@@ -237,21 +237,21 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        const Expanded(
+                        Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'GPS stream live',
-                                style: TextStyle(
+                                _gpsStreamLive ? 'GPS active' : 'GPS paused',
+                                style: const TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   color: Color(0xFF0F172A),
                                 ),
                               ),
-                              SizedBox(height: 1),
-                              Text(
+                              const SizedBox(height: 1),
+                              const Text(
                                 '±8m accuracy',
                                 style: TextStyle(
                                   fontSize: 10.5,
@@ -326,7 +326,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                               overflow: TextOverflow.ellipsis,
                             ),
                             const Text(
-                              'Spatial operator',
+                              'Online',
                               style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
@@ -337,7 +337,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.login_rounded, color: Color(0xFF94A3B8), size: 19),
+                        icon: const Icon(Icons.logout_rounded, color: Color(0xFF94A3B8), size: 19),
                         tooltip: 'Logout',
                         onPressed: () {
                           authProvider.logout();
@@ -441,7 +441,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   const SizedBox(width: 10),
                   const Expanded(
                     child: Text(
-                      'Search places, automations, zones...',
+                      'Search places, automations, activity...',
                       style: TextStyle(
                         fontSize: 13,
                         color: Color(0xFF64748B),
@@ -492,7 +492,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  'GPS acquiring signal',
+                  'GPS active · ±8m',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -509,7 +509,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             onPressed: _openCreateWizard,
             icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
             label: const Text(
-              'New automation',
+              'Create automation',
               style: TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w700,
@@ -537,6 +537,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     final activeCount = ruleProvider.activeCount;
     final totalCount = rules.length;
     final todayStr = DateFormat('EEE, d MMM').format(DateTime.now());
+    final authProvider = context.watch<AuthProvider>();
+    final userName = authProvider.userName ?? 'there';
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -559,9 +561,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'LIVE WORKSPACE',
-                          style: TextStyle(
+                        Text(
+                          'HELLO, ${userName.toUpperCase()}',
+                          style: const TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
@@ -595,7 +597,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Spatial Operating Center',
+                      'Your day, automated.',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -604,9 +606,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    const Text(
-                      'Monitor the places and moments that make your routines run themselves.',
-                      style: TextStyle(
+                    Text(
+                      '$activeCount automations are active and ready.',
+                      style: const TextStyle(
                         fontSize: 12.5,
                         color: Color(0xFF64748B),
                       ),
@@ -620,19 +622,19 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   children: [
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
+                      children: [
                         Text(
-                          'LIVE WORKSPACE',
-                          style: TextStyle(
+                          'HELLO, ${userName.toUpperCase()}',
+                          style: const TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.2,
                             color: Color(0xFF00A2A5),
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Spatial Operating Center',
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Your day, automated.',
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
@@ -640,10 +642,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                             letterSpacing: -0.5,
                           ),
                         ),
-                        SizedBox(height: 4),
+                        const SizedBox(height: 4),
                         Text(
-                          'Monitor the places and moments that make your routines run themselves.',
-                          style: TextStyle(
+                          '$activeCount automations are active and ready.',
+                          style: const TextStyle(
                             fontSize: 13.5,
                             color: Color(0xFF64748B),
                           ),
@@ -689,7 +691,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                           child: _buildTopStatCard(
                             title: 'ACTIVE AUTOMATIONS',
                             value: activeCount.toString().padLeft(2, '0'),
-                            footerText: 'All operating normally',
+                            footerText: 'All running normally',
                             footerColor: const Color(0xFF0D9488),
                             icon: Icons.bolt_rounded,
                             iconBg: const Color(0xFFE6F7F5),
@@ -701,8 +703,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         Expanded(
                           child: _buildTopStatCard(
                             title: 'SAVED PLACES',
-                            value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '12',
-                            footerText: '3 zones used this week',
+                            value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '03',
+                            footerText: '$totalCount places configured',
                             footerColor: const Color(0xFF64748B),
                             icon: Icons.bookmark_border_rounded,
                             iconBg: const Color(0xFFE6F7F5),
@@ -714,9 +716,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                     const SizedBox(height: 10),
                     _buildTopStatCard(
-                      title: 'GPS ACCURACY',
-                      value: '±8m',
-                      footerText: 'Strong satellite signal',
+                      title: 'AUTOMATION STATUS',
+                      value: 'Active',
+                      footerText: 'GPS active · ±8m',
                       footerColor: const Color(0xFF0D9488),
                       icon: Icons.filter_center_focus_rounded,
                       iconBg: const Color(0xFFE6F7F5),
@@ -733,7 +735,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                       child: _buildTopStatCard(
                         title: 'ACTIVE AUTOMATIONS',
                         value: activeCount.toString().padLeft(2, '0'),
-                        footerText: 'All operating normally',
+                        footerText: 'All running normally',
                         footerColor: const Color(0xFF0D9488),
                         icon: Icons.bolt_rounded,
                         iconBg: const Color(0xFFE6F7F5),
@@ -746,8 +748,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     Expanded(
                       child: _buildTopStatCard(
                         title: 'SAVED PLACES',
-                        value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '12',
-                        footerText: '3 zones used this week',
+                        value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '03',
+                        footerText: '$totalCount places configured',
                         footerColor: const Color(0xFF64748B),
                         icon: Icons.bookmark_border_rounded,
                         iconBg: const Color(0xFFE6F7F5),
@@ -759,9 +761,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     // Card 3: GPS ACCURACY
                     Expanded(
                       child: _buildTopStatCard(
-                        title: 'GPS ACCURACY',
-                        value: '±8m',
-                        footerText: 'Strong signal',
+                        title: 'SYSTEM STATUS',
+                        value: 'Ready',
+                        footerText: 'GPS active · ±8m',
                         footerColor: const Color(0xFF0D9488),
                         icon: Icons.filter_center_focus_rounded,
                         iconBg: const Color(0xFFE6F7F5),
@@ -773,7 +775,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               SizedBox(height: isMobile ? 14 : 20),
 
               // ------------------------------------
-              // ROW 2: RADAR CANVAS + AUTOMATION PULSE
+              // ROW 2: RADAR CANVAS + ACTIVE AUTOMATIONS
               // ------------------------------------
               if (isMobile || isTablet)
                 Column(
@@ -787,14 +789,14 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Left: LIVE GEOFENCE RADAR (Flex 6)
+                    // Left: LIVE LOCATION (Flex 6)
                     Expanded(
                       flex: 6,
                       child: _buildLiveGeofenceRadarCard(),
                     ),
                     const SizedBox(width: 20),
 
-                    // Right: AUTOMATION PULSE (Flex 4)
+                    // Right: ACTIVE AUTOMATIONS (Flex 4)
                     Expanded(
                       flex: 4,
                       child: _buildAutomationPulseCard(rules),
@@ -918,7 +920,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // RADAR CANVAS WIDGET (Live Geofence Radar)
+  // RADAR CANVAS WIDGET (Live Location)
   // ==========================================
   Widget _buildLiveGeofenceRadarCard({List<RuleModel>? rules, bool isMobile = false}) {
     final activeRules = rules ?? context.watch<RuleProvider>().rules;
@@ -930,7 +932,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // AUTOMATION PULSE CARD
+  // ACTIVE AUTOMATIONS CARD
   // ==========================================
   Widget _buildAutomationPulseCard(List<RuleModel> rules, {bool isMobile = false}) {
     return Container(
@@ -952,7 +954,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: const [
                   Text(
-                    'AUTOMATION PULSE',
+                    'ACTIVE AUTOMATIONS',
                     style: TextStyle(
                       fontSize: 10.5,
                       fontWeight: FontWeight.w700,
@@ -962,7 +964,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    'Ready to act',
+                    'Ready to run',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -984,23 +986,23 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           ),
           const SizedBox(height: 14),
 
-          // Item 1: Arrive at Studio
+          // Item 1
           _buildAutomationPulseItem(
-            title: rules.isNotEmpty ? rules[0].name : 'Arrive at Studio',
+            title: rules.isNotEmpty ? rules[0].name : 'Office Silence',
             subtitle: rules.isNotEmpty
-                ? '${rules[0].action.soundProfileMode ?? "Silent"} mode • ${rules[0].trigger.type.displayName}'
-                : 'Start focus mode • Weekdays',
-            icon: Icons.work_outline_rounded,
+                ? 'When I ${rules[0].trigger.type.displayName.toLowerCase()} within ${rules[0].radius.toInt()} m → ${_formatActionHuman(rules[0].action)}'
+                : 'When I arrive within 100 m → Silent mode',
+            icon: rules.isNotEmpty ? _getActionIcon(rules[0].action.type) : Icons.volume_off_rounded,
           ),
           const SizedBox(height: 10),
 
-          // Item 2: Leave Home
+          // Item 2
           _buildAutomationPulseItem(
-            title: rules.length > 1 ? rules[1].name : 'Leave Home',
+            title: rules.length > 1 ? rules[1].name : 'Bus Stop Alarm',
             subtitle: rules.length > 1
-                ? 'Action trigger • ${rules[1].trigger.type.displayName}'
-                : 'Share commute ETA • Daily',
-            icon: Icons.home_outlined,
+                ? 'When I ${rules[1].trigger.type.displayName.toLowerCase()} within ${rules[1].radius.toInt()} m → ${_formatActionHuman(rules[1].action)}'
+                : 'When I approach within 200 m → Ring alarm',
+            icon: rules.length > 1 ? _getActionIcon(rules[1].action.type) : Icons.alarm_rounded,
           ),
 
           SizedBox(height: isMobile ? 14 : 20),
@@ -1031,6 +1033,38 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         ],
       ),
     );
+  }
+
+  IconData _getActionIcon(ActionType type) {
+    switch (type) {
+      case ActionType.alarm:
+        return Icons.alarm_rounded;
+      case ActionType.soundProfile:
+        return Icons.volume_off_rounded;
+      case ActionType.wifi:
+        return Icons.wifi_rounded;
+      case ActionType.bluetooth:
+        return Icons.bluetooth_rounded;
+      case ActionType.reminder:
+        return Icons.notifications_active_rounded;
+    }
+  }
+
+  String _formatActionHuman(RuleAction action) {
+    switch (action.type) {
+      case ActionType.alarm:
+        return 'Ring alarm (${action.alarmDurationSeconds}s)';
+      case ActionType.soundProfile:
+        return 'Switch to ${action.soundProfileMode ?? "Silent"}';
+      case ActionType.wifi:
+        return 'Toggle WiFi';
+      case ActionType.bluetooth:
+        return 'Toggle Bluetooth';
+      case ActionType.reminder:
+        return action.reminderTitle?.isNotEmpty == true
+            ? 'Notify "${action.reminderTitle}"'
+            : 'Show reminder';
+    }
   }
 
   Widget _buildAutomationPulseItem({
@@ -1125,7 +1159,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    'Your key zones',
+                    'Your saved places',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -1161,21 +1195,23 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Icon(Icons.home_outlined, color: Color(0xFF00A2A5), size: 20),
-                      SizedBox(height: 16),
+                    children: [
+                      const Icon(Icons.home_outlined, color: Color(0xFF00A2A5), size: 20),
+                      const SizedBox(height: 16),
                       Text(
-                        'Home',
-                        style: TextStyle(
+                        rules.isNotEmpty ? rules[0].location.name : 'Home',
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        '300m radius',
-                        style: TextStyle(
+                        rules.isNotEmpty ? '${rules[0].radius.toInt()} m radius' : '100 m radius',
+                        style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           color: Color(0xFF64748B),
@@ -1187,7 +1223,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               ),
               const SizedBox(width: 14),
 
-              // Card 2: Studio (Slate background)
+              // Card 2: Studio / Office (Slate background)
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
@@ -1197,21 +1233,23 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Icon(Icons.work_outline_rounded, color: Color(0xFF00A2A5), size: 20),
-                      SizedBox(height: 16),
+                    children: [
+                      const Icon(Icons.work_outline_rounded, color: Color(0xFF00A2A5), size: 20),
+                      const SizedBox(height: 16),
                       Text(
-                        'Studio',
-                        style: TextStyle(
+                        rules.length > 1 ? rules[1].location.name : 'Office',
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF0F172A),
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      SizedBox(height: 2),
+                      const SizedBox(height: 2),
                       Text(
-                        '150m radius',
-                        style: TextStyle(
+                        rules.length > 1 ? '${rules[1].radius.toInt()} m radius' : '100 m radius',
+                        style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
                           color: Color(0xFF64748B),
@@ -1262,7 +1300,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                   SizedBox(height: 2),
                   Text(
-                    'Quietly in motion',
+                    'Activity timeline',
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
@@ -1307,7 +1345,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.isNotEmpty ? history[0].ruleName : 'Focus mode enabled at Studio',
+                      history.isNotEmpty ? history[0].ruleName : 'Silent mode triggered at Office',
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -1350,7 +1388,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.length > 1 ? history[1].ruleName : 'Entered Cubbon Park zone',
+                      history.length > 1 ? history[1].ruleName : 'Arrived at destination',
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -1398,7 +1436,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ElevatedButton.icon(
                     onPressed: _openCreateWizard,
                     icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-                    label: const Text('New Rule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    label: const Text('Create automation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A2A5)),
                   ),
                 ],
@@ -1412,7 +1450,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           ),
         );
 
-      case 2: // Map canvas
+      case 2: // Map
         return Container(
           margin: const EdgeInsets.all(28),
           decoration: BoxDecoration(
@@ -1427,7 +1465,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         return ListView(
           padding: const EdgeInsets.all(28),
           children: [
-            const Text('Activity Stream', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const Text('Activity History', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
             const SizedBox(height: 16),
             if (historyProvider.history.isEmpty)
               const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No events recorded yet', style: TextStyle(color: Color(0xFF64748B)))))
@@ -1440,11 +1478,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         return ListView(
           padding: const EdgeInsets.all(28),
           children: [
-            const Text('Settings & Diagnostics', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const Text('Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
             const SizedBox(height: 16),
-            _buildCleanSettingsTile('GPS High Precision', 'Continuous ±8m accuracy evaluation', Icons.gps_fixed_rounded),
-            _buildCleanSettingsTile('Background Service', 'Always running foreground notification', Icons.battery_charging_full_rounded),
-            _buildCleanSettingsTile('DND Policy Grant', 'System sound management active', Icons.do_not_disturb_on_outlined),
+            _buildCleanSettingsTile('High Precision Location', 'Continuous ±8m accuracy evaluation', Icons.gps_fixed_rounded),
+            _buildCleanSettingsTile('Background Service', 'Runs reliably in background without interruption', Icons.battery_charging_full_rounded),
+            _buildCleanSettingsTile('Sound & Do Not Disturb Access', 'Allows sound mode switching', Icons.do_not_disturb_on_outlined),
           ],
         );
 
@@ -1471,7 +1509,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               color: const Color(0xFFE3F7F5),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.bolt_rounded, color: Color(0xFF00A2A5), size: 20),
+            child: Icon(_getActionIcon(rule.action.type), color: const Color(0xFF00A2A5), size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1480,7 +1518,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               children: [
                 Text(rule.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
                 const SizedBox(height: 2),
-                Text('${rule.trigger.type.displayName} • ${rule.action.type.displayName}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text('When I ${rule.trigger.type.displayName.toLowerCase()} within ${rule.radius.toInt()} m of ${rule.location.name} → ${_formatActionHuman(rule.action)}',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
               ],
             ),
           ),
@@ -1568,12 +1607,12 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           const SizedBox(height: 12),
           const Text('No automations created yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
           const SizedBox(height: 4),
-          const Text('Create your first rule to trigger actions based on your location.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          const Text('Create your first automation to take action when you arrive, leave, or approach a place.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _openCreateWizard,
             icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-            label: const Text('Create Rule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            label: const Text('Create automation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A2A5)),
           ),
         ],
@@ -1651,7 +1690,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 ),
                 const SizedBox(width: 5),
                 const Text(
-                  'GPS Live',
+                  'GPS active',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -1684,7 +1723,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         backgroundColor: Colors.white,
         elevation: 8,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Overview'),
+          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.bolt_rounded), label: 'Automations'),
           BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Map'),
           BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded), label: 'Activity'),
@@ -1695,6 +1734,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         backgroundColor: const Color(0xFF00A2A5),
         foregroundColor: Colors.white,
         elevation: 4,
+        tooltip: 'Create automation',
         child: const Icon(Icons.add_rounded, size: 26),
       ),
     );
@@ -1882,7 +1922,7 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                   ],
                 ),
 
-                // 2. Top-Left Overlay Pill: LIVE GEOFENCE RADAR
+                // 2. Top-Left Overlay Pill: Live location · Bengaluru
                 Positioned(
                   top: widget.isMobile ? 10 : 14,
                   left: widget.isMobile ? 10 : 14,
@@ -1913,17 +1953,16 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                         ),
                         SizedBox(width: widget.isMobile ? 5 : 7),
                         Text(
-                          widget.isMobile ? 'RADAR' : 'LIVE GEOFENCE RADAR',
+                          'Live location',
                           style: TextStyle(
-                            fontSize: widget.isMobile ? 9.5 : 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
+                            fontSize: widget.isMobile ? 9.5 : 11,
+                            fontWeight: FontWeight.w700,
                             color: const Color(0xFF0F172A),
                           ),
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '• Bengaluru',
+                          '· Bengaluru',
                           style: TextStyle(
                             fontSize: widget.isMobile ? 9.5 : 11,
                             fontWeight: FontWeight.w500,
@@ -1998,14 +2037,14 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                   ),
                 ),
 
-                // 4. Bottom-Left: Live GPS Telemetry Coordinates
+                // 4. Bottom-Left: You are here status pill
                 Positioned(
                   bottom: widget.isMobile ? 10 : 14,
                   left: widget.isMobile ? 10 : 14,
                   child: Container(
                     padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 10, vertical: widget.isMobile ? 4 : 6),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.88),
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
@@ -2018,18 +2057,17 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          Icons.satellite_alt_rounded,
+                          Icons.place_rounded,
                           color: const Color(0xFF00A2A5),
                           size: widget.isMobile ? 11 : 13,
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          '${userLoc.latitude.toStringAsFixed(3)}, ${userLoc.longitude.toStringAsFixed(3)}',
+                          'You are here · ±8m accuracy',
                           style: TextStyle(
                             fontSize: widget.isMobile ? 9.5 : 11,
                             fontWeight: FontWeight.w600,
                             color: Colors.white,
-                            fontFamily: 'monospace',
                           ),
                         ),
                       ],
@@ -2037,7 +2075,7 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                   ),
                 ),
 
-                // 5. Bottom-Right: Active Geofences Counter
+                // 5. Bottom-Right: Active Places Counter
                 Positioned(
                   bottom: widget.isMobile ? 10 : 14,
                   right: widget.isMobile ? 10 : 14,
@@ -2056,10 +2094,10 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.radar_rounded, color: Colors.white, size: widget.isMobile ? 12 : 14),
+                        Icon(Icons.place_outlined, color: Colors.white, size: widget.isMobile ? 12 : 14),
                         const SizedBox(width: 4),
                         Text(
-                          '${activeGeofences.length} ${activeGeofences.length == 1 ? "zone" : "zones"}',
+                          '${activeGeofences.length} ${activeGeofences.length == 1 ? "active place" : "active places"}',
                           style: TextStyle(
                             fontSize: widget.isMobile ? 10 : 11.5,
                             fontWeight: FontWeight.w700,

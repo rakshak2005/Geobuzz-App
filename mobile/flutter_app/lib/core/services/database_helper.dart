@@ -96,7 +96,7 @@ class DatabaseHelper {
 
   // =================== WEB PERSISTENCE HELPERS ===================
   Future<void> _ensureWebLoaded() async {
-    if (!kIsWeb || _webLoaded) return;
+    if (!kIsWeb) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final rulesStr = prefs.getString(_webRulesKey);
@@ -104,7 +104,11 @@ class DatabaseHelper {
         final list = jsonDecode(rulesStr) as List;
         _webRules.clear();
         for (final item in list) {
-          _webRules.add(RuleModel.fromMap(Map<String, dynamic>.from(item)));
+          try {
+            _webRules.add(RuleModel.fromMap(Map<String, dynamic>.from(item)));
+          } catch (itemErr) {
+            debugPrint('Failed to parse cached rule: $itemErr');
+          }
         }
       }
 
@@ -113,7 +117,9 @@ class DatabaseHelper {
         final list = jsonDecode(historyStr) as List;
         _webHistory.clear();
         for (final item in list) {
-          _webHistory.add(HistoryItem.fromMap(Map<String, dynamic>.from(item)));
+          try {
+            _webHistory.add(HistoryItem.fromMap(Map<String, dynamic>.from(item)));
+          } catch (_) {}
         }
       }
       _webLoaded = true;

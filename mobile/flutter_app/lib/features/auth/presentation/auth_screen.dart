@@ -155,10 +155,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       ),
                       SizedBox(width: 4),
                       Text(
-                        'Private spatial automation',
+                        'Private by design',
                         style: TextStyle(
                           fontSize: 11.5,
-                          fontWeight: FontWeight.w500,
+                          fontWeight: FontWeight.w600,
                           color: Color(0xFF64748B),
                         ),
                       ),
@@ -181,8 +181,8 @@ class _AuthScreenState extends State<AuthScreen> {
                       // Center Hero Icon
                       Center(
                         child: SizedBox(
-                          width: 58,
-                          height: 58,
+                          width: 52,
+                          height: 52,
                           child: Image.asset(
                             'assets/images/logo.png',
                             fit: BoxFit.contain,
@@ -219,10 +219,10 @@ class _AuthScreenState extends State<AuthScreen> {
 
                       // Description Line
                       const Text(
-                        'Your places, routines, and quiet moments—ready when you are.',
+                        'Your places and automations, ready when you are.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 12.5,
                           color: Color(0xFF64748B),
                           height: 1.3,
                         ),
@@ -249,7 +249,7 @@ class _AuthScreenState extends State<AuthScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              // Tab Switcher (Sign in / Register)
+                              // Tab Switcher (Sign in / Create account)
                               Container(
                                 padding: const EdgeInsets.all(4),
                                 decoration: BoxDecoration(
@@ -278,7 +278,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                                 : [],
                                           ),
                                           child: Text(
-                                            'Sign In',
+                                            'Sign in',
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
                                               fontSize: 13,
@@ -309,7 +309,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                                 : [],
                                           ),
                                           child: Text(
-                                            'Register',
+                                            'Create account',
                                             textAlign: TextAlign.center,
                                             style: TextStyle(
                                               fontSize: 13,
@@ -363,7 +363,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                 keyboardType: TextInputType.emailAddress,
                                 style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
                                 decoration: _inputDecoration(
-                                  hintText: 'you@company.com',
+                                  hintText: 'you@example.com',
                                   prefixIcon: Icons.mail_outline_rounded,
                                 ),
                                 validator: (val) {
@@ -473,7 +473,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
                               const SizedBox(height: 12),
 
-                              // Keep me signed in Checkbox
+                              // Remember me Checkbox
                               Row(
                                 children: [
                                   SizedBox(
@@ -489,7 +489,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   const Text(
-                                    'Keep me signed in for 30 days',
+                                    'Remember me',
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: Color(0xFF64748B),
@@ -499,7 +499,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               ),
                               const SizedBox(height: 16),
 
-                              // Main CTA Button: "Enter your workspace ->"
+                              // Main CTA Button: "Sign in ->"
                               ElevatedButton(
                                 onPressed: authProvider.isLoading ? null : _submit,
                                 style: ElevatedButton.styleFrom(
@@ -517,74 +517,20 @@ class _AuthScreenState extends State<AuthScreen> {
                                       )
                                     : Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
-                                        children: const [
+                                        children: [
                                           Text(
-                                            'Enter your workspace',
-                                            style: TextStyle(
+                                            _isLogin ? 'Sign in' : 'Create account',
+                                            style: const TextStyle(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w700,
                                             ),
                                           ),
-                                          SizedBox(width: 6),
-                                          Icon(Icons.arrow_forward_rounded, size: 16),
+                                          const SizedBox(width: 6),
+                                          const Icon(Icons.arrow_forward_rounded, size: 16),
                                         ],
                                       ),
                               ),
                               const SizedBox(height: 14),
-
-                              // "or continue with" divider
-                              Row(
-                                children: const [
-                                  Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
-                                  Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 10),
-                                    child: Text(
-                                      'or continue with',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFF94A3B8),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Company SSO Button
-                              OutlinedButton(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Single Sign-On (SSO) redirect initiated.'),
-                                      backgroundColor: Color(0xFF00A2A5),
-                                    ),
-                                  );
-                                },
-                                style: OutlinedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFF8FAFC),
-                                  foregroundColor: const Color(0xFF1E293B),
-                                  side: const BorderSide(color: Color(0xFFE2E8F0)),
-                                  padding: const EdgeInsets.symmetric(vertical: 12),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: const [
-                                    Icon(Icons.language_rounded, size: 16, color: Color(0xFF00A2A5)),
-                                    SizedBox(width: 6),
-                                    Text(
-                                      'Company SSO',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF1E293B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(height: 12),
 
                               // Terms and Privacy Notice
                               const Text(
@@ -615,7 +561,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   Icon(Icons.check_circle_outline_rounded, size: 14, color: Color(0xFF00A2A5)),
                   SizedBox(width: 6),
                   Text(
-                    'Location data stays under your control.',
+                    'Your location data stays under your control.',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -626,7 +572,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                '© 2026 GeoBuzz · Spatial Intelligence, made human.',
+                '© 2026 GeoBuzz · Privacy · Terms',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,

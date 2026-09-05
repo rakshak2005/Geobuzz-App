@@ -53,9 +53,10 @@ class RuleProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Load local rules first for instant UI response
+      // 1. Always load from persistent local storage first
       _rules = await _db.getAllRules();
       await _engine.reloadRules();
+      notifyListeners();
 
       // 2. Sync with cloud Neon PostgreSQL if online & authenticated
       final token = await _getToken();
@@ -92,7 +93,7 @@ class RuleProvider extends ChangeNotifier {
 
   Future<bool> saveRule(RuleModel rule) async {
     try {
-      // 1. Save locally
+      // 1. Immediately save locally to persistent storage
       final existing = await _db.getRuleById(rule.id);
       if (existing != null) {
         await _db.updateRule(rule);
@@ -100,7 +101,12 @@ class RuleProvider extends ChangeNotifier {
         await _db.insertRule(rule);
       }
 
-      // 2. Sync with Neon PostgreSQL API
+      // Update in-memory state immediately so UI refreshes without waiting for cloud
+      _rules = await _db.getAllRules();
+      await _engine.reloadRules();
+      notifyListeners();
+
+      // 2. Sync with Neon PostgreSQL API asynchronously
       final token = await _getToken();
       if (token != null && token.isNotEmpty) {
         try {
@@ -114,7 +120,6 @@ class RuleProvider extends ChangeNotifier {
         }
       }
 
-      await loadRules();
       return true;
     } catch (e) {
       _error = 'Failed to save automation: $e';

@@ -11,13 +11,13 @@ extension TriggerTypeExtension on TriggerType {
   String get displayName {
     switch (this) {
       case TriggerType.enter:
-        return 'ENTER';
+        return 'Arrive';
       case TriggerType.exit:
-        return 'EXIT';
+        return 'Leave';
       case TriggerType.enterAndExit:
-        return 'ENTER + EXIT';
+        return 'Arrive & Leave';
       case TriggerType.near:
-        return 'NEAR';
+        return 'Approach';
     }
   }
 
@@ -37,13 +37,18 @@ extension TriggerTypeExtension on TriggerType {
   static TriggerType fromString(String val) {
     switch (val.toUpperCase()) {
       case 'ENTER':
+      case 'ARRIVE':
         return TriggerType.enter;
       case 'EXIT':
+      case 'LEAVE':
         return TriggerType.exit;
       case 'ENTER_EXIT':
       case 'ENTER + EXIT':
+      case 'ARRIVE & LEAVE':
+      case 'ARRIVE + LEAVE':
         return TriggerType.enterAndExit;
       case 'NEAR':
+      case 'APPROACH':
         return TriggerType.near;
       default:
         return TriggerType.enter;
