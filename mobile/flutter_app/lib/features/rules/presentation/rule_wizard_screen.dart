@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimensions.dart';
+import '../../../core/services/location_service.dart';
 import '../../../shared/models/geo_location.dart';
 import '../../../shared/models/rule_model.dart';
 import '../../../shared/models/rule_trigger.dart';
@@ -27,7 +27,8 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   // Step 1: Location
   final TextEditingController _ruleNameController = TextEditingController();
   final TextEditingController _locationNameController = TextEditingController();
-  LatLng _selectedLatLng = const LatLng(12.9716, 77.5946); // Default Bengaluru or current pos
+  LatLng _selectedLatLng =
+      const LatLng(12.9716, 77.5946); // Default Bengaluru or current pos
   String _address = 'Bengaluru, Karnataka';
 
   // Step 2: Radius
@@ -45,8 +46,10 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   String _exitSoundProfileMode = 'RESTORE';
   int _alarmDurationSeconds = 15;
   bool _alarmVibrate = true;
-  final TextEditingController _reminderTitleController = TextEditingController();
-  final TextEditingController _reminderMessageController = TextEditingController();
+  final TextEditingController _reminderTitleController =
+      TextEditingController();
+  final TextEditingController _reminderMessageController =
+      TextEditingController();
   bool _isOneTimeReminder = false;
 
   @override
@@ -75,6 +78,12 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
       _locationNameController.text = 'My Location';
       _reminderTitleController.text = 'GeoBuzz Reminder';
       _reminderMessageController.text = 'You arrived at your destination!';
+
+      // Auto-set to current GPS position if available
+      final cachedPos = LocationService.instance.currentPosition.value;
+      if (cachedPos != null) {
+        _selectedLatLng = LatLng(cachedPos.latitude, cachedPos.longitude);
+      }
     }
   }
 
@@ -111,13 +120,18 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
       radius: _radiusMeters,
       trigger: RuleTrigger(
         type: _selectedTrigger,
-        nearThresholdMeters: _selectedTrigger == TriggerType.near ? _nearThresholdMeters : null,
+        nearThresholdMeters:
+            _selectedTrigger == TriggerType.near ? _nearThresholdMeters : null,
         triggerImmediatelyIfInside: _triggerImmediatelyIfInside,
       ),
       action: RuleAction(
         type: _selectedAction,
-        soundProfileMode: _selectedAction == ActionType.soundProfile ? _soundProfileMode : null,
-        exitSoundProfileMode: _selectedAction == ActionType.soundProfile ? _exitSoundProfileMode : null,
+        soundProfileMode: _selectedAction == ActionType.soundProfile
+            ? _soundProfileMode
+            : null,
+        exitSoundProfileMode: _selectedAction == ActionType.soundProfile
+            ? _exitSoundProfileMode
+            : null,
         alarmDurationSeconds: _alarmDurationSeconds,
         alarmVibrate: _alarmVibrate,
         reminderTitle: _reminderTitleController.text.trim(),
@@ -153,23 +167,31 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: const Color(0xFFF3F6F8),
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        surfaceTintColor: Colors.transparent,
+        titleSpacing: 0,
         title: Text(
           widget.existingRule != null ? 'Edit Automation' : 'Create Automation',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: Color(0xFF0F172A),
+          ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: const Icon(Icons.close_rounded, color: Color(0xFF0F172A), size: 22),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
       body: Column(
         children: [
-          // Step Progress Indicator
+          // Step Progress Indicator (Clean teal style)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: AppDimensions.md, vertical: AppDimensions.sm),
-            color: AppColors.surfaceDark,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            color: Colors.white,
             child: Row(
               children: List.generate(5, (index) {
                 final isCompleted = index < _currentStep;
@@ -177,12 +199,12 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
                 return Expanded(
                   child: Container(
                     height: 4,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      color: isCompleted
-                          ? AppColors.success
-                          : (isCurrent ? AppColors.primary : AppColors.borderDark),
-                      borderRadius: BorderRadius.circular(2),
+                      color: (isCompleted || isCurrent)
+                          ? const Color(0xFF00A2A5)
+                          : const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 );
@@ -195,42 +217,55 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
             child: _buildCurrentStep(),
           ),
 
-          // Bottom Navigation Buttons
+          // Bottom Navigation Buttons (Fixed Bottom Bar)
           Container(
-            padding: const EdgeInsets.all(AppDimensions.md),
+            padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
-              border: Border(top: BorderSide(color: AppColors.borderDark)),
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFE5EBEF))),
             ),
-            child: Row(
-              children: [
-                if (_currentStep > 0)
-                  OutlinedButton(
-                    onPressed: _onBack,
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.textSecondaryDark,
-                      side: const BorderSide(color: AppColors.borderDark),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      shape: const RoundedRectangleBorder(borderRadius: AppDimensions.roundedMd),
+            child: SafeArea(
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    OutlinedButton(
+                      onPressed: _onBack,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF64748B),
+                        side: const BorderSide(color: Color(0xFFCBD5E1)),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: const Text(
+                        'Back',
+                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                      ),
                     ),
-                    child: const Text('Back'),
+                  if (_currentStep > 0) const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _onNext,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00A2A5),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: Text(
+                        _currentStep == 4
+                            ? (widget.existingRule != null ? 'Save Changes' : 'Activate Automation')
+                            : 'Continue',
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
-                if (_currentStep > 0) const SizedBox(width: AppDimensions.md),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _onNext,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _currentStep == 4 ? AppColors.success : AppColors.primary,
-                    ),
-                    child: Text(
-                      _currentStep == 4
-                          ? (widget.existingRule != null ? 'Save Changes' : 'Activate Rule')
-                          : 'Continue',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -260,28 +295,78 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.all(AppDimensions.md),
+        Container(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+          color: Colors.white,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('STEP 1 OF 5', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryLight, letterSpacing: 1.0)),
-              const SizedBox(height: 4),
-              const Text('Choose Geographic Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text(
+                'STEP 1 OF 5',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF00A2A5),
+                  letterSpacing: 1.1,
+                ),
+              ),
+              const SizedBox(height: 3),
+              const Text(
+                'Choose Geographic Location',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: _ruleNameController,
-                decoration: const InputDecoration(
+                style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A), fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
                   labelText: 'Rule Name',
-                  prefixIcon: Icon(Icons.edit_rounded, color: AppColors.primaryLight),
+                  labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  prefixIcon: const Icon(Icons.edit_outlined, color: Color(0xFF00A2A5), size: 18),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF00A2A5), width: 1.5),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               TextField(
                 controller: _locationNameController,
-                decoration: const InputDecoration(
+                style: const TextStyle(fontSize: 14, color: Color(0xFF0F172A), fontWeight: FontWeight.w600),
+                decoration: InputDecoration(
                   labelText: 'Location Label (e.g. Office, Home, Bus Stop)',
-                  prefixIcon: Icon(Icons.place_rounded, color: AppColors.primaryLight),
+                  labelStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                  prefixIcon: const Icon(Icons.place_outlined, color: Color(0xFF00A2A5), size: 18),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: Color(0xFF00A2A5), width: 1.5),
+                  ),
                 ),
               ),
             ],
@@ -304,19 +389,34 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   // STEP 2: Radius Selection
   Widget _buildStep2Radius() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.md),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('STEP 2 OF 5', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryLight, letterSpacing: 1.0)),
+          const Text(
+            'STEP 2 OF 5',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF00A2A5),
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Define Geofence Radius',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 4),
-          const Text('Define Geofence Radius', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 8),
           const Text(
             'GeoBuzz will detect when your phone enters or leaves this circle.',
-            style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Preset Chips
           Wrap(
@@ -327,11 +427,15 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
               return ChoiceChip(
                 label: Text('${r.toInt()} m'),
                 selected: isSelected,
-                selectedColor: AppColors.primary,
-                backgroundColor: AppColors.surfaceLightDark,
+                selectedColor: const Color(0xFF00A2A5),
+                backgroundColor: Colors.white,
+                side: BorderSide(
+                  color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFCBD5E1),
+                ),
                 labelStyle: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.textSecondaryDark,
-                  fontWeight: FontWeight.bold,
+                  color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
                 ),
                 onSelected: (_) {
                   setState(() => _radiusMeters = r);
@@ -340,40 +444,76 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
             }).toList(),
           ),
 
-          const SizedBox(height: 32),
-          Text(
-            'Custom Radius: ${_radiusMeters.toInt()} meters',
-            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 16),
-          ),
-          Slider(
-            value: _radiusMeters,
-            min: 20.0,
-            max: 2000.0,
-            divisions: 100,
-            activeColor: AppColors.primary,
-            inactiveColor: AppColors.surfaceLightDark,
-            label: '${_radiusMeters.toInt()} m',
-            onChanged: (val) {
-              setState(() => _radiusMeters = val);
-            },
+          const SizedBox(height: 28),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Custom Radius',
+                      style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 15),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F7F5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        '${_radiusMeters.toInt()} meters',
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF007A7C), fontSize: 13),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFF00A2A5),
+                    inactiveTrackColor: const Color(0xFFE2E8F0),
+                    thumbColor: const Color(0xFF00A2A5),
+                    overlayColor: const Color(0xFF00A2A5).withValues(alpha: 0.15),
+                  ),
+                  child: Slider(
+                    value: _radiusMeters,
+                    min: 20.0,
+                    max: 2000.0,
+                    divisions: 100,
+                    label: '${_radiusMeters.toInt()} m',
+                    onChanged: (val) {
+                      setState(() => _radiusMeters = val);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 18),
           Container(
-            padding: const EdgeInsets.all(AppDimensions.md),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: AppDimensions.roundedLg,
-              border: Border.all(color: AppColors.borderDark),
+              color: const Color(0xFFF1F8F8),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFD3EBEA)),
             ),
             child: const Row(
               children: [
-                Icon(Icons.info_outline_rounded, color: AppColors.secondary),
+                Icon(Icons.info_outline_rounded, color: Color(0xFF00A2A5), size: 20),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'For indoor places (Office/Home), 50m-100m is recommended. For bus stops or transit alerts, 100m-250m is ideal.',
-                    style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 12),
+                    'For indoor places (Office/Home), 50m-100m is recommended. For transit alerts, 150m-300m is ideal.',
+                    style: TextStyle(color: Color(0xFF475569), fontSize: 12.5),
                   ),
                 ),
               ],
@@ -387,13 +527,28 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   // STEP 3: Trigger Selection
   Widget _buildStep3Trigger() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.md),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('STEP 3 OF 5', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryLight, letterSpacing: 1.0)),
-          const SizedBox(height: 4),
-          const Text('Choose Event Trigger', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text(
+            'STEP 3 OF 5',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF00A2A5),
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Choose Event Trigger',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 16),
 
           _buildTriggerCard(
@@ -402,21 +557,21 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
             desc: 'Executes immediately when your device enters the zone.',
             icon: Icons.login_rounded,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildTriggerCard(
             type: TriggerType.exit,
             title: 'EXIT Radius',
             desc: 'Executes immediately when your device leaves the zone.',
             icon: Icons.logout_rounded,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildTriggerCard(
             type: TriggerType.enterAndExit,
             title: 'ENTER + EXIT (Two-Way)',
             desc: 'Executes entry action on arrival and exit action on departure (e.g. Silent on arrive, Normal on leave).',
             icon: Icons.sync_alt_rounded,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           _buildTriggerCard(
             type: TriggerType.near,
             title: 'NEAR Proximity Alert',
@@ -424,37 +579,31 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
             icon: Icons.radar_rounded,
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // Immediate Trigger Toggle for testing & current location
+          // Immediate Trigger Toggle
           Container(
-            padding: const EdgeInsets.all(AppDimensions.sm),
             decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: AppDimensions.roundedLg,
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _triggerImmediatelyIfInside
-                    ? AppColors.primary
-                    : AppColors.borderDark,
+                color: _triggerImmediatelyIfInside ? const Color(0xFF00A2A5) : const Color(0xFFE2E8F0),
               ),
             ),
-            child: Material(
-              color: Colors.transparent,
-              child: SwitchListTile(
-                title: const Text(
-                  'Trigger immediately if already inside radius',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                subtitle: const Text(
-                  'Enable this to test the alarm right now if you are already at this location.',
-                  style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 12),
-                ),
-                value: _triggerImmediatelyIfInside,
-                activeColor: AppColors.primaryLight,
-                onChanged: (val) {
-                  setState(() => _triggerImmediatelyIfInside = val);
-                },
+            child: SwitchListTile(
+              title: const Text(
+                'Trigger immediately if already inside radius',
+                style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w700, fontSize: 13.5),
               ),
+              subtitle: const Text(
+                'Enable this to test the automation right away if you are already at this location.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5),
+              ),
+              value: _triggerImmediatelyIfInside,
+              activeColor: const Color(0xFF00A2A5),
+              onChanged: (val) {
+                setState(() => _triggerImmediatelyIfInside = val);
+              },
             ),
           ),
         ],
@@ -471,40 +620,50 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
     final isSelected = _selectedTrigger == type;
     return InkWell(
       onTap: () => setState(() => _selectedTrigger = type),
-      borderRadius: AppDimensions.roundedLg,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(AppDimensions.md),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withAlpha(30) : AppColors.surfaceDark,
-          borderRadius: AppDimensions.roundedLg,
+          color: isSelected ? const Color(0xFFE3F7F5) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.borderDark,
-            width: isSelected ? 2 : 1,
+            color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary : AppColors.surfaceLightDark,
-                borderRadius: AppDimensions.roundedMd,
+                color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, color: Colors.white, size: 24),
+              child: Icon(icon, color: isSelected ? Colors.white : const Color(0xFF00A2A5), size: 20),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white)),
-                  const SizedBox(height: 4),
-                  Text(desc, style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryDark)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                      color: isSelected ? const Color(0xFF007A7C) : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    desc,
+                    style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                  ),
                 ],
               ),
             ),
             if (isSelected)
-              const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF00A2A5), size: 20),
           ],
         ),
       ),
@@ -514,13 +673,28 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   // STEP 4: Action Selection & Configuration
   Widget _buildStep4Action() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.md),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('STEP 4 OF 5', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryLight, letterSpacing: 1.0)),
-          const SizedBox(height: 4),
-          const Text('Select & Configure Action', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text(
+            'STEP 4 OF 5',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF00A2A5),
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Select & Configure Action',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 16),
 
           // Action Type Selector Chips
@@ -534,11 +708,14 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
                   child: ChoiceChip(
                     label: Text(action.displayName),
                     selected: isSelected,
-                    selectedColor: AppColors.primary,
-                    backgroundColor: AppColors.surfaceDark,
+                    selectedColor: const Color(0xFF00A2A5),
+                    backgroundColor: Colors.white,
+                    side: BorderSide(
+                      color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFCBD5E1),
+                    ),
                     labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : AppColors.textSecondaryDark,
-                      fontWeight: FontWeight.bold,
+                      color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                      fontWeight: FontWeight.w700,
                     ),
                     onSelected: (_) => setState(() => _selectedAction = action),
                   ),
@@ -546,7 +723,7 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
               }).toList(),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
           // Action Configuration Details
           _buildActionConfigPanel(),
@@ -559,19 +736,26 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
     switch (_selectedAction) {
       case ActionType.soundProfile:
         return Container(
-          padding: const EdgeInsets.all(AppDimensions.md),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: AppDimensions.roundedLg,
-            border: Border.all(color: AppColors.borderDark),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Sound Profile Target', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('Sound Profile Target',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 14)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _soundProfileMode,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'SILENT', child: Text('🔕 Silent Mode')),
                   DropdownMenuItem(value: 'VIBRATE', child: Text('📳 Vibrate Mode')),
@@ -580,10 +764,17 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
                 onChanged: (val) => setState(() => _soundProfileMode = val ?? 'SILENT'),
               ),
               const SizedBox(height: 16),
-              const Text('On Exit Radius', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              const Text('On Exit Radius',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 14)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 value: _exitSoundProfileMode,
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                ),
                 items: const [
                   DropdownMenuItem(value: 'RESTORE', child: Text('Restore Previous Device Sound Mode')),
                   DropdownMenuItem(value: 'NORMAL', child: Text('Force Normal Mode')),
@@ -597,28 +788,36 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
 
       case ActionType.alarm:
         return Container(
-          padding: const EdgeInsets.all(AppDimensions.md),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: AppDimensions.roundedLg,
-            border: Border.all(color: AppColors.borderDark),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Alarm Duration: $_alarmDurationSeconds seconds', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-              Slider(
-                value: _alarmDurationSeconds.toDouble(),
-                min: 5,
-                max: 60,
-                divisions: 11,
-                label: '$_alarmDurationSeconds sec',
-                onChanged: (val) => setState(() => _alarmDurationSeconds = val.toInt()),
+              Text('Alarm Duration: $_alarmDurationSeconds seconds',
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 14)),
+              SliderTheme(
+                data: SliderTheme.of(context).copyWith(
+                  activeTrackColor: const Color(0xFF00A2A5),
+                  inactiveTrackColor: const Color(0xFFE2E8F0),
+                  thumbColor: const Color(0xFF00A2A5),
+                ),
+                child: Slider(
+                  value: _alarmDurationSeconds.toDouble(),
+                  min: 5,
+                  max: 60,
+                  divisions: 11,
+                  label: '$_alarmDurationSeconds sec',
+                  onChanged: (val) => setState(() => _alarmDurationSeconds = val.toInt()),
+                ),
               ),
               SwitchListTile(
-                title: const Text('Device Vibration Pattern', style: TextStyle(color: Colors.white)),
+                title: const Text('Device Vibration Pattern', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w600)),
                 value: _alarmVibrate,
-                activeColor: AppColors.primaryLight,
+                activeColor: const Color(0xFF00A2A5),
                 onChanged: (val) => setState(() => _alarmVibrate = val),
               ),
             ],
@@ -627,31 +826,41 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
 
       case ActionType.reminder:
         return Container(
-          padding: const EdgeInsets.all(AppDimensions.md),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: AppDimensions.roundedLg,
-            border: Border.all(color: AppColors.borderDark),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               TextField(
                 controller: _reminderTitleController,
-                decoration: const InputDecoration(labelText: 'Reminder Title (e.g. Buy groceries)'),
+                decoration: InputDecoration(
+                  labelText: 'Reminder Title (e.g. Buy groceries)',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
                 controller: _reminderMessageController,
                 maxLines: 2,
-                decoration: const InputDecoration(labelText: 'Reminder Message Details'),
+                decoration: InputDecoration(
+                  labelText: 'Reminder Message Details',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE2E8F0))),
+                ),
               ),
               const SizedBox(height: 12),
               SwitchListTile(
-                title: const Text('One-time Trigger', style: TextStyle(color: Colors.white)),
-                subtitle: const Text('Automatically disable rule once triggered', style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 12)),
+                title: const Text('One-time Trigger', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                subtitle: const Text('Automatically disable rule once triggered', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
                 value: _isOneTimeReminder,
-                activeColor: AppColors.primaryLight,
+                activeColor: const Color(0xFF00A2A5),
                 onChanged: (val) => setState(() => _isOneTimeReminder = val),
               ),
             ],
@@ -661,20 +870,21 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
       case ActionType.wifi:
       case ActionType.bluetooth:
         return Container(
-          padding: const EdgeInsets.all(AppDimensions.md),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: AppDimensions.roundedLg,
-            border: Border.all(color: AppColors.borderDark),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${_selectedAction.displayName} Automation', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              Text('${_selectedAction.displayName} Automation',
+                  style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 14)),
               const SizedBox(height: 8),
               const Text(
-                'Due to Android 10+ platform security policies, GeoBuzz will present an interactive notification allowing instant one-tap toggle of connectivity settings upon entering or exiting the geofence.',
-                style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
+                'Due to Android platform security policies, GeoBuzz will present an interactive notification allowing instant one-tap toggle of connectivity settings upon entering or exiting the geofence.',
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             ],
           ),
@@ -685,42 +895,67 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
   // STEP 5: Review & Save
   Widget _buildStep5Review() {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.md),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('STEP 5 OF 5', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primaryLight, letterSpacing: 1.0)),
-          const SizedBox(height: 4),
-          const Text('Review Automation Summary', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text(
+            'STEP 5 OF 5',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF00A2A5),
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 3),
+          const Text(
+            'Review Automation Summary',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF0F172A),
+            ),
+          ),
           const SizedBox(height: 16),
-
           Container(
-            padding: const EdgeInsets.all(AppDimensions.md),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.surfaceDark,
-              borderRadius: AppDimensions.roundedLg,
-              border: Border.all(color: AppColors.primary, width: 1.5),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF00A2A5), width: 1.5),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.place_rounded, color: AppColors.primaryLight),
-                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F7F5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.place_rounded, color: Color(0xFF00A2A5), size: 20),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _locationNameController.text,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const Divider(color: AppColors.borderDark, height: 24),
+                const Divider(color: Color(0xFFE2E8F0), height: 24),
                 _buildSummaryRow('Geofence Radius', '${_radiusMeters.toInt()} meters'),
                 _buildSummaryRow('Trigger Event', _selectedTrigger.displayName),
                 if (_triggerImmediatelyIfInside)
-                  _buildSummaryRow('Immediate Execution', 'Enabled (Fires right away if inside)'),
+                  _buildSummaryRow('Immediate Execution', 'Enabled (Fires right away)'),
                 _buildSummaryRow('Action Type', _selectedAction.displayName),
                 if (_selectedAction == ActionType.soundProfile)
                   _buildSummaryRow('Sound Mode', 'ENTER: $_soundProfileMode | EXIT: $_exitSoundProfileMode'),
@@ -736,12 +971,12 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
 
   Widget _buildSummaryRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 14)),
-          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+          Text(label, style: const TextStyle(color: Color(0xFF64748B), fontSize: 13.5)),
+          Text(value, style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w700, fontSize: 13.5)),
         ],
       ),
     );

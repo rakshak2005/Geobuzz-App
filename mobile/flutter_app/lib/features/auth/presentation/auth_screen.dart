@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimensions.dart';
 import '../domain/auth_provider.dart';
 import '../../home/presentation/responsive_scaffold.dart';
 
@@ -15,6 +13,7 @@ class AuthScreen extends StatefulWidget {
 
 class _AuthScreenState extends State<AuthScreen> {
   bool _isLogin = true;
+  bool _keepMeSignedIn = true;
   final _formKey = GlobalKey<FormState>();
 
   final TextEditingController _nameController = TextEditingController();
@@ -50,7 +49,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Passwords do not match'),
-            backgroundColor: AppColors.error,
+            backgroundColor: Color(0xFFEF4444),
           ),
         );
         return;
@@ -68,7 +67,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(_isLogin ? 'Welcome back!' : 'Account registered successfully!'),
-            backgroundColor: AppColors.success,
+            backgroundColor: const Color(0xFF10B981),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -79,7 +78,7 @@ class _AuthScreenState extends State<AuthScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(authProvider.authError!),
-            backgroundColor: AppColors.error,
+            backgroundColor: const Color(0xFFEF4444),
           ),
         );
       }
@@ -89,308 +88,588 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
+    final size = MediaQuery.of(context).size;
+    final isDesktop = size.width >= 800;
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: const Color(0xFFF1F6F7),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppDimensions.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Official App Brand Logo
-                    Center(
-                      child: Container(
-                        width: 86,
-                        height: 86,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(
+            horizontal: isDesktop ? 32 : 20,
+            vertical: 18,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // -------------------------------------------------------------
+              // 1. TOP HEADER (GeoBuzz Logo Left, Shield Tag Right)
+              // -------------------------------------------------------------
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Top-left Brand Logo
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 28,
+                        height: 28,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 8),
+                      RichText(
+                        text: const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Geo',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'Buzz',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF00A2A5),
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  // Top-right Privacy Tag
+                  Row(
+                    children: const [
+                      Icon(
+                        Icons.shield_outlined,
+                        size: 13,
+                        color: Color(0xFF00A2A5),
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        'Private spatial automation',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 28),
+
+              // -------------------------------------------------------------
+              // 2. CENTER CONTENT (Logo, Header, White Card)
+              // -------------------------------------------------------------
+              Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Center Hero Icon
+                      Center(
+                        child: SizedBox(
+                          width: 58,
+                          height: 58,
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Subtitle Tag
+                      const Text(
+                        'AUTOMATE BY LOCATION',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1.5,
+                          color: Color(0xFF00A2A5),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+
+                      // Main Header Title
+                      Text(
+                        _isLogin ? 'Welcome back to GeoBuzz' : 'Create your account',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // Description Line
+                      const Text(
+                        'Your places, routines, and quiet moments—ready when you are.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF64748B),
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Main Authentication Card
+                      Container(
+                        padding: const EdgeInsets.all(22),
                         decoration: BoxDecoration(
-                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withAlpha(128),
-                              blurRadius: 24,
-                              offset: const Offset(0, 6),
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                              blurRadius: 20,
+                              offset: const Offset(0, 8),
                             ),
                           ],
                         ),
-                        child: ClipOval(
-                          child: Image.asset(
-                            'assets/images/app_logo.png',
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/images/logo.png',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    RichText(
-                      textAlign: TextAlign.center,
-                      text: const TextSpan(
-                        children: [
-                          TextSpan(
-                            text: 'Geo',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                          TextSpan(
-                            text: 'Buzz',
-                            style: TextStyle(
-                              fontSize: 32,
-                              fontWeight: FontWeight.w900,
-                              color: AppColors.accent,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'AUTOMATE BY LOCATION',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2.0,
-                        color: AppColors.textSecondaryDark,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Your phone knows where you are. GeoBuzz knows what to do.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textMutedDark,
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    // Auth Card
-                    Container(
-                      padding: const EdgeInsets.all(AppDimensions.lg),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceDark,
-                        borderRadius: AppDimensions.roundedLg,
-                        border: Border.all(color: AppColors.borderDark),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(120),
-                            blurRadius: 24,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          // Tab Toggle (Sign In / Register)
-                          Container(
-                            decoration: const BoxDecoration(
-                              border: Border(bottom: BorderSide(color: AppColors.borderDark)),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _isLogin = true;
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          bottom: BorderSide(
-                                            color: _isLogin ? AppColors.accent : Colors.transparent,
-                                            width: 2,
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Tab Switcher (Sign in / Register)
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F5F9),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _isLogin = true),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 180),
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: _isLogin ? Colors.white : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            boxShadow: _isLogin
+                                                ? [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.06),
+                                                      blurRadius: 4,
+                                                      offset: const Offset(0, 1),
+                                                    )
+                                                  ]
+                                                : [],
+                                          ),
+                                          child: Text(
+                                            'Sign In',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: _isLogin ? FontWeight.w700 : FontWeight.w500,
+                                              color: _isLogin ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                      child: Text(
-                                        'Sign In',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: _isLogin ? Colors.white : AppColors.textSecondaryDark,
+                                    ),
+                                    Expanded(
+                                      child: GestureDetector(
+                                        onTap: () => setState(() => _isLogin = false),
+                                        child: AnimatedContainer(
+                                          duration: const Duration(milliseconds: 180),
+                                          padding: const EdgeInsets.symmetric(vertical: 8),
+                                          decoration: BoxDecoration(
+                                            color: !_isLogin ? Colors.white : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(8),
+                                            boxShadow: !_isLogin
+                                                ? [
+                                                    BoxShadow(
+                                                      color: Colors.black.withValues(alpha: 0.06),
+                                                      blurRadius: 4,
+                                                      offset: const Offset(0, 1),
+                                                    )
+                                                  ]
+                                                : [],
+                                          ),
+                                          child: Text(
+                                            'Register',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: !_isLogin ? FontWeight.w700 : FontWeight.w500,
+                                              color: !_isLogin ? const Color(0xFF0F172A) : const Color(0xFF64748B),
+                                            ),
+                                          ),
                                         ),
                                       ),
                                     ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Full Name (Register Mode Only)
+                              if (!_isLogin) ...[
+                                const Text(
+                                  'Full name',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
                                   ),
                                 ),
-                                Expanded(
-                                  child: InkWell(
-                                    onTap: () {
-                                      setState(() {
-                                        _isLogin = false;
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      decoration: BoxDecoration(
-                                        border: Border(
-                                          bottom: BorderSide(
-                                            color: !_isLogin ? AppColors.accent : Colors.transparent,
-                                            width: 2,
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _nameController,
+                                  style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
+                                  decoration: _inputDecoration(
+                                    hintText: 'Jane Doe',
+                                    prefixIcon: Icons.person_outline_rounded,
+                                  ),
+                                  validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your name' : null,
+                                ),
+                                const SizedBox(height: 12),
+                              ],
+
+                              // Email Field
+                              const Text(
+                                'Email address',
+                                style: TextStyle(
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
+                                decoration: _inputDecoration(
+                                  hintText: 'you@company.com',
+                                  prefixIcon: Icons.mail_outline_rounded,
+                                ),
+                                validator: (val) {
+                                  if (val == null || val.trim().isEmpty) return 'Please enter email';
+                                  if (!val.contains('@') || !val.contains('.')) return 'Please enter a valid email address';
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Password Field
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const Text(
+                                    'Password',
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                  if (_isLogin)
+                                    GestureDetector(
+                                      onTap: () {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Password reset link sent to your email.'),
+                                            backgroundColor: Color(0xFF00A2A5),
                                           ),
-                                        ),
-                                      ),
-                                      child: Text(
-                                        'Register',
-                                        textAlign: TextAlign.center,
+                                        );
+                                      },
+                                      child: const Text(
+                                        'Forgot password?',
                                         style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          color: !_isLogin ? Colors.white : AppColors.textSecondaryDark,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF00A2A5),
                                         ),
                                       ),
                                     ),
+                                ],
+                              ),
+                              const SizedBox(height: 6),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
+                                decoration: _inputDecoration(
+                                  hintText: 'Enter your password',
+                                  prefixIcon: Icons.lock_outline_rounded,
+                                  suffixIcon: IconButton(
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    icon: Icon(
+                                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                      color: const Color(0xFF94A3B8),
+                                      size: 18,
+                                    ),
+                                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                                   ),
+                                ),
+                                validator: (val) {
+                                  if (val == null || val.isEmpty) return 'Please enter password';
+                                  if (val.length < 6) return 'Password must be at least 6 characters';
+                                  return null;
+                                },
+                              ),
+
+                              // Confirm Password (Register Mode Only)
+                              if (!_isLogin) ...[
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Confirm password',
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1E293B),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                TextFormField(
+                                  controller: _confirmPasswordController,
+                                  obscureText: _obscureConfirmPassword,
+                                  style: const TextStyle(fontSize: 13.5, color: Color(0xFF0F172A)),
+                                  decoration: _inputDecoration(
+                                    hintText: 'Re-enter your password',
+                                    prefixIcon: Icons.lock_outline_rounded,
+                                    suffixIcon: IconButton(
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      icon: Icon(
+                                        _obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                        color: const Color(0xFF94A3B8),
+                                        size: 18,
+                                      ),
+                                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                    ),
+                                  ),
+                                  validator: (val) {
+                                    if (val == null || val.isEmpty) return 'Please confirm your password';
+                                    if (val != _passwordController.text) return 'Passwords do not match';
+                                    return null;
+                                  },
                                 ),
                               ],
-                            ),
-                          ),
-                          const SizedBox(height: 20),
 
-                          // Name Field (Register only)
-                          if (!_isLogin) ...[
-                            TextFormField(
-                              controller: _nameController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: const InputDecoration(
-                                labelText: 'Full Name',
-                                prefixIcon: Icon(Icons.person_outline_rounded, color: AppColors.primaryLight),
-                              ),
-                              validator: (val) => val == null || val.trim().isEmpty ? 'Please enter your name' : null,
-                            ),
-                            const SizedBox(height: 16),
-                          ],
+                              const SizedBox(height: 12),
 
-                          // Email Field
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: const InputDecoration(
-                              labelText: 'Email Address',
-                              prefixIcon: Icon(Icons.email_outlined, color: AppColors.primaryLight),
-                            ),
-                            validator: (val) {
-                              if (val == null || val.trim().isEmpty) return 'Please enter email';
-                              if (!val.contains('@') || !val.contains('.')) return 'Please enter a valid email address';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password Field
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            style: const TextStyle(color: Colors.white),
-                            decoration: InputDecoration(
-                              labelText: 'Password',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight),
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _obscurePassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                                  color: AppColors.textSecondaryDark,
-                                  size: 20,
-                                ),
-                                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                              ),
-                            ),
-                            validator: (val) {
-                              if (val == null || val.isEmpty) return 'Please enter password';
-                              if (val.length < 6) return 'Password must be at least 6 characters';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Confirm Password Field (Register only)
-                          if (!_isLogin) ...[
-                            TextFormField(
-                              controller: _confirmPasswordController,
-                              obscureText: _obscureConfirmPassword,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                labelText: 'Confirm Password',
-                                prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppColors.primaryLight),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscureConfirmPassword ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-                                    color: AppColors.textSecondaryDark,
-                                    size: 20,
-                                  ),
-                                  onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
-                                ),
-                              ),
-                              validator: (val) {
-                                if (val == null || val.isEmpty) return 'Please confirm your password';
-                                if (val != _passwordController.text) return 'Passwords do not match';
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                          ],
-
-                          const SizedBox(height: 8),
-
-                          // Submit CTA Button
-                          ElevatedButton(
-                            onPressed: authProvider.isLoading ? null : _submit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: const RoundedRectangleBorder(borderRadius: AppDimensions.roundedMd),
-                            ),
-                            child: authProvider.isLoading
-                                ? const SizedBox(
+                              // Keep me signed in Checkbox
+                              Row(
+                                children: [
+                                  SizedBox(
                                     height: 20,
                                     width: 20,
-                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                                  )
-                                : Text(
-                                    _isLogin ? 'Sign In to GeoBuzz' : 'Create Account',
-                                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    child: Checkbox(
+                                      value: _keepMeSignedIn,
+                                      activeColor: const Color(0xFF00A2A5),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
+                                      side: const BorderSide(color: Color(0xFFCBD5E1), width: 1.5),
+                                      onChanged: (val) => setState(() => _keepMeSignedIn = val ?? true),
+                                    ),
                                   ),
-                          ),
-                          const SizedBox(height: 16),
+                                  const SizedBox(width: 8),
+                                  const Text(
+                                    'Keep me signed in for 30 days',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
 
-                          // Help / info footer
-                          Center(
-                            child: Text(
-                              _isLogin
-                                  ? 'Need an account? Switch to Register above.'
-                                  : 'Already registered? Switch to Sign In above.',
-                              style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 12),
-                            ),
+                              // Main CTA Button: "Enter your workspace ->"
+                              ElevatedButton(
+                                onPressed: authProvider.isLoading ? null : _submit,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF00A2A5),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: authProvider.isLoading
+                                    ? const SizedBox(
+                                        height: 16,
+                                        width: 16,
+                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                      )
+                                    : Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: const [
+                                          Text(
+                                            'Enter your workspace',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                          ),
+                                          SizedBox(width: 6),
+                                          Icon(Icons.arrow_forward_rounded, size: 16),
+                                        ],
+                                      ),
+                              ),
+                              const SizedBox(height: 14),
+
+                              // "or continue with" divider
+                              Row(
+                                children: const [
+                                  Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
+                                  Padding(
+                                    padding: EdgeInsets.symmetric(horizontal: 10),
+                                    child: Text(
+                                      'or continue with',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF94A3B8),
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(child: Divider(color: Color(0xFFE2E8F0), thickness: 1)),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Company SSO Button
+                              OutlinedButton(
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Single Sign-On (SSO) redirect initiated.'),
+                                      backgroundColor: Color(0xFF00A2A5),
+                                    ),
+                                  );
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF8FAFC),
+                                  foregroundColor: const Color(0xFF1E293B),
+                                  side: const BorderSide(color: Color(0xFFE2E8F0)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(Icons.language_rounded, size: 16, color: Color(0xFF00A2A5)),
+                                    SizedBox(width: 6),
+                                    Text(
+                                      'Company SSO',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+
+                              // Terms and Privacy Notice
+                              const Text(
+                                'By continuing, you agree to GeoBuzz Terms and acknowledge the Privacy Notice.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  color: Color(0xFF94A3B8),
+                                  height: 1.3,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(height: 24),
+
+              // -------------------------------------------------------------
+              // 3. BOTTOM FOOTER
+              // -------------------------------------------------------------
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.check_circle_outline_rounded, size: 14, color: Color(0xFF00A2A5)),
+                  SizedBox(width: 6),
+                  Text(
+                    'Location data stays under your control.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '© 2026 GeoBuzz · Spatial Intelligence, made human.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration({
+    required String hintText,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13.5),
+      prefixIcon: Icon(prefixIcon, color: const Color(0xFF00A2A5), size: 18),
+      suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: const Color(0xFFF8FAFC),
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFF00A2A5), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEF4444)),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
       ),
     );
   }

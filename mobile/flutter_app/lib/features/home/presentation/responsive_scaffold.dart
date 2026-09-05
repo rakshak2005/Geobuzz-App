@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 
-import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_dimensions.dart';
 import '../../../core/services/location_service.dart';
 import '../../../core/services/rule_engine.dart';
 import '../../../shared/models/rule_model.dart';
 import '../../../shared/models/rule_trigger.dart';
 import '../../../shared/models/rule_action.dart';
 import '../../../shared/models/history_item.dart';
-import '../../../shared/widgets/geobuzz_brand_logo.dart';
 import '../../../shared/widgets/alarm_banner.dart';
-import '../../../shared/widgets/status_badge.dart';
+import '../../../shared/widgets/command_palette_modal.dart';
 import '../../rules/domain/rule_provider.dart';
 import '../../rules/presentation/rule_wizard_screen.dart';
 import '../../history/domain/history_provider.dart';
@@ -29,14 +28,9 @@ class ResponsiveScaffold extends StatefulWidget {
 }
 
 class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
-  int _selectedIndex = 0; // 0: Dashboard, 1: Automations, 2: Map, 3: Activity, 4: Analytics, 5: Settings
+  int _selectedIndex = 0; // 0: Overview, 1: Automations, 2: Map canvas, 3: Activity stream, 4: Settings
   final TextEditingController _searchController = TextEditingController();
-  final MapController _radarMapController = MapController();
-  final MapController _canvasMapController = MapController();
-  String _automationFilter = 'ALL';
-  LatLng? _currentLocation;
-  double? _currentAccuracy;
-  bool _isLocating = false;
+  bool _gpsStreamLive = true;
 
   @override
   void initState() {
@@ -45,55 +39,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       context.read<RuleProvider>().loadRules();
       context.read<HistoryProvider>().loadHistory();
       RuleEngine.instance.initialize();
-      _locateDevice(animateMap: true);
     });
-
-    // Listen to real-time position updates
-    LocationService.instance.currentPosition.addListener(_onPositionUpdated);
-  }
-
-  void _onPositionUpdated() {
-    final pos = LocationService.instance.currentPosition.value;
-    if (pos != null && mounted) {
-      setState(() {
-        _currentLocation = LatLng(pos.latitude, pos.longitude);
-        _currentAccuracy = pos.accuracy;
-      });
-    }
-  }
-
-  Future<void> _locateDevice({bool animateMap = true}) async {
-    if (_isLocating) return;
-    setState(() => _isLocating = true);
-    try {
-      final pos = await LocationService.instance.getCurrentLocation();
-      if (pos != null && mounted) {
-        final newCenter = LatLng(pos.latitude, pos.longitude);
-        setState(() {
-          _currentLocation = newCenter;
-          _currentAccuracy = pos.accuracy;
-          _isLocating = false;
-        });
-
-        if (animateMap) {
-          try {
-            _radarMapController.move(newCenter, 15.0);
-          } catch (_) {}
-          try {
-            _canvasMapController.move(newCenter, 15.0);
-          } catch (_) {}
-        }
-      } else {
-        if (mounted) setState(() => _isLocating = false);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _isLocating = false);
-    }
   }
 
   @override
   void dispose() {
-    LocationService.instance.currentPosition.removeListener(_onPositionUpdated);
     _searchController.dispose();
     super.dispose();
   }
@@ -104,99 +54,291 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     );
   }
 
+  void _openCommandPalette() {
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.4),
+      builder: (_) => CommandPaletteModal(
+        onNavigate: (idx) => setState(() => _selectedIndex = idx),
+        onOpenCreateWizard: _openCreateWizard,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth >= 1024;
-        final isTablet = constraints.maxWidth >= 640 && constraints.maxWidth < 1024;
-
-        if (isDesktop) {
-          return _buildDesktopLayout();
-        } else {
-          return _buildMobileLayout(isTablet: isTablet);
-        }
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true): _openCommandPalette,
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): _openCommandPalette,
       },
+      child: Focus(
+        autofocus: true,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isDesktop = constraints.maxWidth >= 960;
+            if (isDesktop) {
+              return _buildDesktopLayout();
+            } else {
+              return _buildMobileLayout();
+            }
+          },
+        ),
+      ),
     );
   }
 
   // ==========================================
-  // 1. DESKTOP WORKSPACE LAYOUT (Linear/Raycast inspired)
+  // DESKTOP PIXEL-PERFECT STITCH LAYOUT
   // ==========================================
   Widget _buildDesktopLayout() {
     final authProvider = context.watch<AuthProvider>();
     final ruleProvider = context.watch<RuleProvider>();
 
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: const Color(0xFFF3F6F8), // Neutral light background canvas
       body: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Persistent Left Sidebar
+          // ------------------------------------
+          // LEFT SIDEBAR (Width: 230)
+          // ------------------------------------
           Container(
-            width: 260,
+            width: 230,
             decoration: const BoxDecoration(
-              color: AppColors.surfaceDark,
-              border: Border(right: BorderSide(color: AppColors.borderDark, width: 1)),
+              color: Colors.white,
+              border: Border(
+                right: BorderSide(color: Color(0xFFE5EBEF), width: 1),
+              ),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Brand Header
-                const Padding(
-                  padding: EdgeInsets.all(AppDimensions.lg),
-                  child: GeoBuzzBrandLogo(size: 34, showTagline: true),
+                // 1. Logo Header (Official GeoBuzz Branding)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                  child: Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/logo.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.contain,
+                      ),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          RichText(
+                            text: const TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: 'Geo',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF1E293B),
+                                    letterSpacing: -0.6,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: 'Buzz',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w900,
+                                    color: Color(0xFF00A2A5),
+                                    letterSpacing: -0.6,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          const Text(
+                            'AUTOMATE BY LOCATION',
+                            style: TextStyle(
+                              fontSize: 7.5,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-                const Divider(color: AppColors.borderDark, height: 1),
 
-                // Navigation Items
-                const SizedBox(height: 12),
-                _buildSidebarItem(0, 'Dashboard', Icons.dashboard_outlined, Icons.dashboard_rounded),
-                _buildSidebarItem(1, 'Automations', Icons.bolt_outlined, Icons.bolt_rounded, badgeCount: ruleProvider.rules.length),
-                _buildSidebarItem(2, 'Map Canvas', Icons.map_outlined, Icons.map_rounded),
-                _buildSidebarItem(3, 'Activity Logs', Icons.history_outlined, Icons.history_rounded),
-                _buildSidebarItem(4, 'Analytics', Icons.bar_chart_outlined, Icons.bar_chart_rounded),
-                _buildSidebarItem(5, 'Settings', Icons.settings_outlined, Icons.settings_rounded),
+                // 2. SPATIAL CONTROL SECTION
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  child: Text(
+                    'SPATIAL CONTROL',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _buildSidebarNavButton(0, 'Overview', Icons.grid_view_rounded),
+                _buildSidebarNavButton(1, 'Automations', Icons.bolt_rounded),
+                _buildSidebarNavButton(2, 'Map canvas', Icons.map_outlined),
+                _buildSidebarNavButton(3, 'Activity stream', Icons.show_chart_rounded),
+
+                const SizedBox(height: 28),
+
+                // 3. SYSTEM SECTION
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  child: Text(
+                    'SYSTEM',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                _buildSidebarNavButton(4, 'Settings', Icons.settings_outlined),
 
                 const Spacer(),
 
-                // Engine Status Card in Sidebar
-                _buildSidebarEngineWidget(ruleProvider.activeCount),
-                const Divider(color: AppColors.borderDark, height: 1),
-
-                // User Profile & Logout
+                // 4. GPS Stream Live Switch Card
                 Padding(
-                  padding: const EdgeInsets.all(AppDimensions.md),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFF00A2A5), width: 1.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00A2A5).withValues(alpha: 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _gpsStreamLive ? const Color(0xFF00A2A5) : const Color(0xFF94A3B8),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'GPS stream live',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF0F172A),
+                                ),
+                              ),
+                              SizedBox(height: 1),
+                              Text(
+                                '±8m accuracy',
+                                style: TextStyle(
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: Color(0xFF64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Transform.scale(
+                          scale: 0.75,
+                          child: Switch(
+                            value: _gpsStreamLive,
+                            activeTrackColor: const Color(0xFF00A2A5),
+                            activeThumbColor: Colors.white,
+                            inactiveThumbColor: Colors.white,
+                            inactiveTrackColor: const Color(0xFFCBD5E1),
+                            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                            onChanged: (val) {
+                              setState(() => _gpsStreamLive = val);
+                              if (val) {
+                                RuleEngine.instance.initialize();
+                              } else {
+                                LocationService.instance.stopPositionStream();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // 5. User Profile Bar
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppColors.primaryLight.withAlpha(40),
-                        child: Text(
-                          (authProvider.userName ?? 'E').substring(0, 1).toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accent, fontSize: 14),
+                      Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Center(
+                          child: Text(
+                            (authProvider.userName ?? 'R').substring(0, 1).toUpperCase(),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF1E293B),
+                              fontSize: 14,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              authProvider.userName ?? 'Explorer',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13),
+                              authProvider.userName ?? 'Rakshak',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF0F172A),
+                              ),
                               overflow: TextOverflow.ellipsis,
                             ),
                             const Text(
-                              'Pro Account',
-                              style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 11),
+                              'Spatial operator',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Color(0xFF64748B),
+                              ),
                             ),
                           ],
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.logout_rounded, color: AppColors.textMutedDark, size: 18),
-                        tooltip: 'Sign Out',
+                        icon: const Icon(Icons.login_rounded, color: Color(0xFF94A3B8), size: 19),
+                        tooltip: 'Logout',
                         onPressed: () {
                           authProvider.logout();
                           Navigator.of(context).pushReplacement(
@@ -211,19 +353,19 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             ),
           ),
 
-          // Main Desktop Content Area
+          // ------------------------------------
+          // MAIN CONTENT AREA
+          // ------------------------------------
           Expanded(
             child: Column(
               children: [
-                // Top Global Command Bar
+                // Top Search & Status Action Bar
                 _buildDesktopTopBar(),
-
-                // Active Alarm Banner
                 const AlarmBanner(),
-
-                // Current Tab View
                 Expanded(
-                  child: _buildCurrentTabView(isDesktop: true),
+                  child: _selectedIndex == 0
+                      ? _buildSpatialOperatingCenterView(ruleProvider)
+                      : _buildSecondaryTabView(),
                 ),
               ],
             ),
@@ -233,50 +375,36 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     );
   }
 
-  Widget _buildSidebarItem(int index, String title, IconData icon, IconData activeIcon, {int? badgeCount}) {
+  Widget _buildSidebarNavButton(int index, String title, IconData icon) {
     final isSelected = _selectedIndex == index;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
-        color: isSelected ? AppColors.primary.withAlpha(30) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        color: isSelected ? const Color(0xFFE3F7F5) : Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
           onTap: () => setState(() => _selectedIndex = index),
-          borderRadius: BorderRadius.circular(8),
-          hoverColor: AppColors.surfaceLightDark.withAlpha(80),
+          borderRadius: BorderRadius.circular(10),
+          hoverColor: const Color(0xFFF0FDFB),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             child: Row(
               children: [
                 Icon(
-                  isSelected ? activeIcon : icon,
-                  size: 20,
-                  color: isSelected ? AppColors.accent : AppColors.textSecondaryDark,
+                  icon,
+                  size: 19,
+                  color: isSelected ? const Color(0xFF007A7C) : const Color(0xFF64748B),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                      color: isSelected ? Colors.white : AppColors.textSecondaryDark,
-                    ),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected ? const Color(0xFF007A7C) : const Color(0xFF475569),
                   ),
                 ),
-                if (badgeCount != null && badgeCount > 0)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primary : AppColors.surfaceLightDark,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '$badgeCount',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -285,372 +413,697 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     );
   }
 
-  Widget _buildSidebarEngineWidget(int activeCount) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: LocationService.instance.isTracking,
-      builder: (context, isTracking, _) {
-        return Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: isTracking ? AppColors.success.withAlpha(80) : AppColors.borderDark,
-            ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 10,
-                height: 10,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isTracking ? AppColors.success : AppColors.warning,
-                  boxShadow: [
-                    if (isTracking)
-                      BoxShadow(
-                        color: AppColors.success.withAlpha(128),
-                        blurRadius: 6,
-                        spreadRadius: 1,
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      isTracking ? 'Engine Active' : 'Engine Paused',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isTracking ? AppColors.success : AppColors.warning,
-                      ),
-                    ),
-                    Text(
-                      '$activeCount active zones',
-                      style: const TextStyle(fontSize: 11, color: AppColors.textSecondaryDark),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                value: isTracking,
-                activeColor: AppColors.primaryLight,
-                onChanged: (val) {
-                  if (val) {
-                    RuleEngine.instance.initialize();
-                  } else {
-                    LocationService.instance.stopPositionStream();
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
+  // ------------------------------------
+  // TOP BAR (Search + GPS Pill + New Automation)
+  // ------------------------------------
   Widget _buildDesktopTopBar() {
     return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: AppDimensions.lg),
-      decoration: const BoxDecoration(
-        color: AppColors.surfaceDark,
-        border: Border(bottom: BorderSide(color: AppColors.borderDark, width: 1)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+      color: Colors.transparent,
       child: Row(
         children: [
-          // Search Box with Ctrl+K badge
-          Container(
-            width: 320,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.bgDark,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.borderDark),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Row(
-              children: [
-                const Icon(Icons.search_rounded, color: AppColors.textMutedDark, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextField(
-                    controller: _searchController,
-                    style: const TextStyle(color: Colors.white, fontSize: 13),
-                    decoration: const InputDecoration(
-                      hintText: 'Search automations, places...',
-                      hintStyle: TextStyle(color: AppColors.textMutedDark, fontSize: 13),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 10),
-                      isDense: true,
+          // Search Bar with ⌘ K
+          InkWell(
+            onTap: _openCommandPalette,
+            borderRadius: BorderRadius.circular(12),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 360, minWidth: 200),
+              height: 42,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEBF0F3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFDEE5EA)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 18),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text(
+                      'Search places, automations, zones...',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF64748B),
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLightDark,
-                    borderRadius: BorderRadius.circular(4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xFFCBD5E1)),
+                    ),
+                    child: const Text(
+                      '⌘ K',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
                   ),
-                  child: const Text(
-                    'Ctrl K',
-                    style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.textMutedDark),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const Spacer(),
 
-          // Quick Action CTA Button
-          ElevatedButton.icon(
-            onPressed: _openCreateWizard,
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Create Automation'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          // GPS Telemetry Pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEBF5F1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFFD1EBE1)),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // 2. MOBILE / TABLET LAYOUT
-  // ==========================================
-  Widget _buildMobileLayout({required bool isTablet}) {
-    return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      appBar: AppBar(
-        backgroundColor: AppColors.surfaceDark,
-        elevation: 0,
-        title: const GeoBuzzBrandLogo(size: 28),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.accent),
-            tooltip: 'New Automation',
-            onPressed: _openCreateWizard,
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            const AlarmBanner(),
-            Expanded(child: _buildCurrentTabView(isDesktop: false)),
-          ],
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          color: AppColors.surfaceDark,
-          border: Border(top: BorderSide(color: AppColors.borderDark)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: _selectedIndex > 4 ? 4 : _selectedIndex,
-          onTap: (index) => setState(() => _selectedIndex = index),
-          backgroundColor: AppColors.surfaceDark,
-          selectedItemColor: AppColors.accent,
-          unselectedItemColor: AppColors.textSecondaryDark,
-          type: BottomNavigationBarType.fixed,
-          selectedFontSize: 11,
-          unselectedFontSize: 11,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.bolt_rounded), label: 'Rules'),
-            BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: 'Map'),
-            BottomNavigationBarItem(icon: Icon(Icons.history_rounded), label: 'Activity'),
-            BottomNavigationBarItem(icon: Icon(Icons.settings_rounded), label: 'Settings'),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _openCreateWizard,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add_rounded),
-      ),
-    );
-  }
-
-  // ==========================================
-  // 3. TAB VIEWS ROUTER
-  // ==========================================
-  Widget _buildCurrentTabView({required bool isDesktop}) {
-    switch (_selectedIndex) {
-      case 0:
-        return _buildDashboardView(isDesktop: isDesktop);
-      case 1:
-        return _buildAutomationsView(isDesktop: isDesktop);
-      case 2:
-        return _buildMapCanvasView(isDesktop: isDesktop);
-      case 3:
-        return _buildActivityView();
-      case 4:
-        return _buildAnalyticsView();
-      case 5:
-        return _buildSettingsView();
-      default:
-        return _buildDashboardView(isDesktop: isDesktop);
-    }
-  }
-
-  // ==========================================
-  // VIEW A: DASHBOARD VIEW
-  // ==========================================
-  Widget _buildDashboardView({required bool isDesktop}) {
-    final ruleProvider = context.watch<RuleProvider>();
-    final historyProvider = context.watch<HistoryProvider>();
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isDesktop ? AppDimensions.lg : AppDimensions.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Greeting & Tagline
-          const Text(
-            'Good evening, Rakshak',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
-          ),
-          const SizedBox(height: 4),
-          const Text(
-            'Your phone knows where you are. GeoBuzz knows what to do.',
-            style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
-          ),
-          const SizedBox(height: 20),
-
-          // High Density KPI Cards (Section 13)
-          _buildKPIMetricsRow(ruleProvider.rules.length, ruleProvider.activeCount, historyProvider.history.length),
-          const SizedBox(height: 24),
-
-          // Desktop: 2-Column Split (Live Map + Rules Stream) | Mobile: Vertical Stack
-          if (isDesktop)
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Left Column: Active Rules Stream
-                Expanded(
-                  flex: 5,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader('Active Automations', '${ruleProvider.rules.length} Configured'),
-                      const SizedBox(height: 12),
-                      if (ruleProvider.rules.isEmpty)
-                        _buildEmptyRulesState()
-                      else
-                        ...ruleProvider.rules.map((rule) => _buildModernRuleCard(rule)),
-                    ],
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF10B981),
+                    shape: BoxShape.circle,
                   ),
                 ),
-                const SizedBox(width: 24),
-                // Right Column: Live Map & Proximity Radar
-                Expanded(
-                  flex: 6,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionHeader('Live Geofence Radar', 'Real-time Evaluation'),
-                      const SizedBox(height: 12),
-                      _buildLiveRadarMapWidget(ruleProvider.rules),
-                    ],
+                const SizedBox(width: 8),
+                const Text(
+                  'GPS acquiring signal',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
               ],
-            )
-          else ...[
-            _buildSectionHeader('Active Automations', '${ruleProvider.rules.length} Configured'),
-            const SizedBox(height: 12),
-            if (ruleProvider.rules.isEmpty)
-              _buildEmptyRulesState()
-            else
-              ...ruleProvider.rules.map((rule) => _buildModernRuleCard(rule)),
-            const SizedBox(height: 24),
-            _buildSectionHeader('Live Geofence Radar', 'Real-time Evaluation'),
-            const SizedBox(height: 12),
-            _buildLiveRadarMapWidget(ruleProvider.rules),
-          ],
+            ),
+          ),
+          const SizedBox(width: 14),
+
+          // + New Automation Button (Teal filled)
+          ElevatedButton.icon(
+            onPressed: _openCreateWizard,
+            icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+            label: const Text(
+              'New automation',
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF00A2A5),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildKPIMetricsRow(int totalRules, int activeRules, int triggersToday) {
+  // ------------------------------------
+  // MAIN SPATIAL OPERATING CENTER VIEW
+  // ------------------------------------
+  Widget _buildSpatialOperatingCenterView(RuleProvider ruleProvider) {
+    final rules = ruleProvider.rules;
+    final activeCount = ruleProvider.activeCount;
+    final totalCount = rules.length;
+    final todayStr = DateFormat('EEE, d MMM').format(DateTime.now());
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 600;
-        final itemWidth = isNarrow ? (constraints.maxWidth - 12) / 2 : (constraints.maxWidth - 36) / 4;
+        final isMobile = constraints.maxWidth < 650;
+        final isTablet = constraints.maxWidth >= 650 && constraints.maxWidth < 1050;
+        final contentPadding = isMobile
+            ? const EdgeInsets.fromLTRB(16, 12, 16, 24)
+            : const EdgeInsets.fromLTRB(28, 0, 28, 28);
 
-        return Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            _buildMetricCard(
-              title: 'Active Automations',
-              value: '$activeRules',
-              subtext: '$totalRules Total Rules',
-              icon: Icons.bolt_rounded,
-              accentColor: AppColors.primaryLight,
-              width: itemWidth,
-            ),
-            _buildMetricCard(
-              title: 'Saved Locations',
-              value: '${totalRules > 0 ? totalRules : 0}',
-              subtext: 'Configured Zones',
-              icon: Icons.place_rounded,
-              accentColor: AppColors.accent,
-              width: itemWidth,
-            ),
-            _buildMetricCard(
-              title: 'Triggered Today',
-              value: '$triggersToday',
-              subtext: 'Actions Executed',
-              icon: Icons.track_changes_rounded,
-              accentColor: AppColors.success,
-              width: itemWidth,
-            ),
-            _buildMetricCard(
-              title: 'Engine Status',
-              value: 'Active',
-              subtext: 'Continuous GPS Stream',
-              icon: Icons.radar_rounded,
-              accentColor: AppColors.secondary,
-              width: itemWidth,
-            ),
-          ],
+        return SingleChildScrollView(
+          padding: contentPadding,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header Row
+              if (isMobile)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'LIVE WORKSPACE',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: Color(0xFF00A2A5),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF00A2A5)),
+                              const SizedBox(width: 6),
+                              Text(
+                                todayStr,
+                                style: const TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF1E293B),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Spatial Operating Center',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF0F172A),
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    const Text(
+                      'Monitor the places and moments that make your routines run themselves.',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'LIVE WORKSPACE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: Color(0xFF00A2A5),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Spatial Operating Center',
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFF0F172A),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'Monitor the places and moments that make your routines run themselves.',
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Today, Date Pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.calendar_today_outlined, size: 15, color: Color(0xFF00A2A5)),
+                          const SizedBox(width: 8),
+                          Text(
+                            todayStr,
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF1E293B),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              SizedBox(height: isMobile ? 14 : 20),
+
+              // ------------------------------------
+              // ROW 1: 3 STAT CARDS (Responsive Wrap/Row)
+              // ------------------------------------
+              if (isMobile)
+                Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTopStatCard(
+                            title: 'ACTIVE AUTOMATIONS',
+                            value: activeCount.toString().padLeft(2, '0'),
+                            footerText: 'All operating normally',
+                            footerColor: const Color(0xFF0D9488),
+                            icon: Icons.bolt_rounded,
+                            iconBg: const Color(0xFFE6F7F5),
+                            iconColor: const Color(0xFF00A2A5),
+                            isMobile: true,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _buildTopStatCard(
+                            title: 'SAVED PLACES',
+                            value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '12',
+                            footerText: '3 zones used this week',
+                            footerColor: const Color(0xFF64748B),
+                            icon: Icons.bookmark_border_rounded,
+                            iconBg: const Color(0xFFE6F7F5),
+                            iconColor: const Color(0xFF00A2A5),
+                            isMobile: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _buildTopStatCard(
+                      title: 'GPS ACCURACY',
+                      value: '±8m',
+                      footerText: 'Strong satellite signal',
+                      footerColor: const Color(0xFF0D9488),
+                      icon: Icons.filter_center_focus_rounded,
+                      iconBg: const Color(0xFFE6F7F5),
+                      iconColor: const Color(0xFF00A2A5),
+                      isMobile: true,
+                    ),
+                  ],
+                )
+              else
+                Row(
+                  children: [
+                    // Card 1: ACTIVE AUTOMATIONS
+                    Expanded(
+                      child: _buildTopStatCard(
+                        title: 'ACTIVE AUTOMATIONS',
+                        value: activeCount.toString().padLeft(2, '0'),
+                        footerText: 'All operating normally',
+                        footerColor: const Color(0xFF0D9488),
+                        icon: Icons.bolt_rounded,
+                        iconBg: const Color(0xFFE6F7F5),
+                        iconColor: const Color(0xFF00A2A5),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Card 2: SAVED PLACES
+                    Expanded(
+                      child: _buildTopStatCard(
+                        title: 'SAVED PLACES',
+                        value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '12',
+                        footerText: '3 zones used this week',
+                        footerColor: const Color(0xFF64748B),
+                        icon: Icons.bookmark_border_rounded,
+                        iconBg: const Color(0xFFE6F7F5),
+                        iconColor: const Color(0xFF00A2A5),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Card 3: GPS ACCURACY
+                    Expanded(
+                      child: _buildTopStatCard(
+                        title: 'GPS ACCURACY',
+                        value: '±8m',
+                        footerText: 'Strong signal',
+                        footerColor: const Color(0xFF0D9488),
+                        icon: Icons.filter_center_focus_rounded,
+                        iconBg: const Color(0xFFE6F7F5),
+                        iconColor: const Color(0xFF00A2A5),
+                      ),
+                    ),
+                  ],
+                ),
+              SizedBox(height: isMobile ? 14 : 20),
+
+              // ------------------------------------
+              // ROW 2: RADAR CANVAS + AUTOMATION PULSE
+              // ------------------------------------
+              if (isMobile || isTablet)
+                Column(
+                  children: [
+                    _buildLiveGeofenceRadarCard(isMobile: isMobile),
+                    const SizedBox(height: 14),
+                    _buildAutomationPulseCard(rules, isMobile: isMobile),
+                  ],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left: LIVE GEOFENCE RADAR (Flex 6)
+                    Expanded(
+                      flex: 6,
+                      child: _buildLiveGeofenceRadarCard(),
+                    ),
+                    const SizedBox(width: 20),
+
+                    // Right: AUTOMATION PULSE (Flex 4)
+                    Expanded(
+                      flex: 4,
+                      child: _buildAutomationPulseCard(rules),
+                    ),
+                  ],
+                ),
+              SizedBox(height: isMobile ? 14 : 20),
+
+              // ------------------------------------
+              // ROW 3: SAVED PLACES + RECENT ACTIVITY
+              // ------------------------------------
+              if (isMobile || isTablet)
+                Column(
+                  children: [
+                    _buildSavedPlacesBottomCard(rules, isMobile: isMobile),
+                    const SizedBox(height: 14),
+                    _buildRecentActivityBottomCard(isMobile: isMobile),
+                  ],
+                )
+              else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Left: SAVED PLACES (Flex 6)
+                    Expanded(
+                      flex: 6,
+                      child: _buildSavedPlacesBottomCard(rules),
+                    ),
+                    const SizedBox(width: 20),
+
+                    // Right: RECENT ACTIVITY (Flex 4)
+                    Expanded(
+                      flex: 4,
+                      child: _buildRecentActivityBottomCard(),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildMetricCard({
+  // ==========================================
+  // TOP STAT CARD WIDGET
+  // ==========================================
+  Widget _buildTopStatCard({
     required String title,
     required String value,
-    required String subtext,
+    required String footerText,
+    required Color footerColor,
     required IconData icon,
-    required Color accentColor,
-    required double width,
+    required Color iconBg,
+    required Color iconColor,
+    bool isMobile = false,
   }) {
     return Container(
-      width: width,
-      padding: const EdgeInsets.all(AppDimensions.md),
+      padding: EdgeInsets.all(isMobile ? 14 : 20),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5EBEF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: isMobile ? 9.5 : 10.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: isMobile ? 0.6 : 1.0,
+                    color: const Color(0xFF64748B),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                width: isMobile ? 28 : 32,
+                height: isMobile ? 28 : 32,
+                decoration: BoxDecoration(
+                  color: iconBg,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: iconColor, size: isMobile ? 16 : 18),
+              ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 4 : 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isMobile ? 26 : 32,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+              letterSpacing: -0.8,
+            ),
+          ),
+          SizedBox(height: isMobile ? 4 : 6),
+          Text(
+            footerText,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: isMobile ? 10.5 : 11.5,
+              fontWeight: FontWeight.w600,
+              color: footerColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // RADAR CANVAS WIDGET (Live Geofence Radar)
+  // ==========================================
+  Widget _buildLiveGeofenceRadarCard({List<RuleModel>? rules, bool isMobile = false}) {
+    final activeRules = rules ?? context.watch<RuleProvider>().rules;
+    return LiveGeofenceRadarCard(
+      rules: activeRules,
+      onOpenMapCanvas: () => setState(() => _selectedIndex = 2),
+      isMobile: isMobile,
+    );
+  }
+
+  // ==========================================
+  // AUTOMATION PULSE CARD
+  // ==========================================
+  Widget _buildAutomationPulseCard(List<RuleModel> rules, {bool isMobile = false}) {
+    return Container(
+      height: isMobile ? null : 340,
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5EBEF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header + More Options button
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'AUTOMATION PULSE',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Ready to act',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD6F3F0),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.more_horiz_rounded, color: Color(0xFF007A7C), size: 20),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Item 1: Arrive at Studio
+          _buildAutomationPulseItem(
+            title: rules.isNotEmpty ? rules[0].name : 'Arrive at Studio',
+            subtitle: rules.isNotEmpty
+                ? '${rules[0].action.soundProfileMode ?? "Silent"} mode • ${rules[0].trigger.type.displayName}'
+                : 'Start focus mode • Weekdays',
+            icon: Icons.work_outline_rounded,
+          ),
+          const SizedBox(height: 10),
+
+          // Item 2: Leave Home
+          _buildAutomationPulseItem(
+            title: rules.length > 1 ? rules[1].name : 'Leave Home',
+            subtitle: rules.length > 1
+                ? 'Action trigger • ${rules[1].trigger.type.displayName}'
+                : 'Share commute ETA • Daily',
+            icon: Icons.home_outlined,
+          ),
+
+          SizedBox(height: isMobile ? 14 : 20),
+
+          // + Create automation CTA (Full-width Teal Button)
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _openCreateWizard,
+              icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+              label: const Text(
+                'Create automation',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00A2A5),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAutomationPulseItem({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: const Color(0xFFEEF2F6)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F7F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: const Color(0xFF00A2A5), size: 17),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0F172A),
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF64748B),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFF10B981),
+              shape: BoxShape.circle,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // BOTTOM ROW: SAVED PLACES CARD
+  // ==========================================
+  Widget _buildSavedPlacesBottomCard(List<RuleModel> rules, {bool isMobile = false}) {
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 16 : 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5EBEF)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -658,702 +1111,970 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(title, style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryDark, fontWeight: FontWeight.w500)),
-              Icon(icon, color: accentColor, size: 18),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'SAVED PLACES',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
+                  SizedBox(height: 2),
+                  Text(
+                    'Your key zones',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                ],
+              ),
+              InkWell(
+                onTap: () => setState(() => _selectedIndex = 1),
+                child: const Text(
+                  'View all',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF00A2A5),
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: -0.5),
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              // Card 1: Home (Mint background)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3F7F5),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Icon(Icons.home_outlined, color: Color(0xFF00A2A5), size: 20),
+                      SizedBox(height: 16),
+                      Text(
+                        'Home',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '300m radius',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+
+              // Card 2: Studio (Slate background)
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F7),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: const [
+                      Icon(Icons.work_outline_rounded, color: Color(0xFF00A2A5), size: 20),
+                      SizedBox(height: 16),
+                      Text(
+                        'Studio',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        '150m radius',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF64748B),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
-          Text(subtext, style: const TextStyle(fontSize: 11, color: AppColors.textMutedDark)),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title, String subtitle) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-        Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryDark)),
-      ],
-    );
-  }
+  // ==========================================
+  // BOTTOM ROW: RECENT ACTIVITY CARD
+  // ==========================================
+  Widget _buildRecentActivityBottomCard({bool isMobile = false}) {
+    final historyProvider = context.watch<HistoryProvider>();
+    final history = historyProvider.history;
 
-  Widget _buildModernRuleCard(RuleModel rule) {
-    return ValueListenableBuilder<Map<String, double>>(
-      valueListenable: RuleEngine.instance.liveDistances,
-      builder: (context, distMap, _) {
-        final currentDist = distMap[rule.id];
-        final isInside = currentDist != null && currentDist <= rule.radius;
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(AppDimensions.md),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: rule.isActive ? AppColors.borderDark : AppColors.borderDark.withAlpha(60),
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5EBEF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Header
-              Row(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: _getActionColor(rule.action.type).withAlpha(30),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(_getActionIcon(rule.action.type), color: _getActionColor(rule.action.type), size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          rule.name,
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: rule.isActive ? Colors.white : AppColors.textMutedDark,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '${rule.location.name} • ${rule.radius.toInt()}m geofence',
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryDark),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
+                children: const [
+                  Text(
+                    'RECENT ACTIVITY',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.0,
+                      color: Color(0xFF64748B),
                     ),
                   ),
-                  Switch(
-                    value: rule.isActive,
-                    activeColor: AppColors.primaryLight,
-                    onChanged: (val) => context.read<RuleProvider>().toggleRule(rule.id, val),
+                  SizedBox(height: 2),
+                  Text(
+                    'Quietly in motion',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF0F172A),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
-
-              // Proximity Indicator & Trigger Tag
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceLightDark,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      '${rule.trigger.type.displayName} ➔ ${_formatActionDescription(rule.action)}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
-                    ),
+              InkWell(
+                onTap: () => setState(() => _selectedIndex = 3),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE6F7F5),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  if (currentDist != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: isInside ? AppColors.success.withAlpha(30) : AppColors.surfaceLightDark,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: isInside ? AppColors.success.withAlpha(80) : Colors.transparent,
-                        ),
-                      ),
-                      child: Text(
-                        '${currentDist.toInt()}m (${isInside ? "INSIDE" : "OUTSIDE"})',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: isInside ? AppColors.success : AppColors.secondary,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              // Footer: Test Trigger & Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  InkWell(
-                    onTap: () async {
-                      await RuleEngine.instance.simulateTrigger(rule, 'ENTER');
-                      if (context.mounted) {
-                        context.read<HistoryProvider>().loadHistory();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Simulated "${rule.name}" (${rule.action.type.displayName})'),
-                            backgroundColor: AppColors.primary,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(6),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withAlpha(40),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.primary.withAlpha(80)),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.play_arrow_rounded, size: 14, color: AppColors.accent),
-                          SizedBox(width: 4),
-                          Text('Test Trigger', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.accent)),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondaryDark),
-                        onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => RuleWizardScreen(existingRule: rule)),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
-                        onPressed: () => context.read<RuleProvider>().deleteRule(rule.id),
-                      ),
-                    ],
-                  ),
-                ],
+                  child: const Icon(Icons.north_east_rounded, color: Color(0xFF007A7C), size: 18),
+                ),
               ),
             ],
           ),
-        );
-      },
+          const SizedBox(height: 16),
+
+          // Log item 1
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3F7F5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.do_not_disturb_on_outlined, color: Color(0xFF00A2A5), size: 16),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      history.isNotEmpty ? history[0].ruleName : 'Focus mode enabled at Studio',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      history.isNotEmpty
+                          ? DateFormat('hh:mm a').format(history[0].timestamp)
+                          : 'Today • 9:12 AM',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+
+          // Log item 2
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F5F7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.location_on_outlined, color: Color(0xFF64748B), size: 16),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      history.length > 1 ? history[1].ruleName : 'Entered Cubbon Park zone',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF0F172A),
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      history.length > 1
+                          ? DateFormat('hh:mm a').format(history[1].timestamp)
+                          : 'Yesterday • 6:26 PM',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildLiveRadarMapWidget(List<RuleModel> rules, {bool isFullCanvas = false}) {
-    final defaultPos = const LatLng(12.9716, 77.5946);
-    final mapCenter = _currentLocation ??
-        (rules.isNotEmpty
-            ? LatLng(rules.first.location.latitude, rules.first.location.longitude)
-            : defaultPos);
+  // ==========================================
+  // SECONDARY TABS (Automations, Map, Activity, Settings)
+  // ==========================================
+  Widget _buildSecondaryTabView() {
+    final ruleProvider = context.watch<RuleProvider>();
+    final historyProvider = context.watch<HistoryProvider>();
 
-    final mapCtrl = isFullCanvas ? _canvasMapController : _radarMapController;
-
-    return Container(
-      height: isFullCanvas ? null : 380,
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderDark),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Stack(
-        children: [
-          FlutterMap(
-            mapController: mapCtrl,
-            options: MapOptions(
-              initialCenter: mapCenter,
-              initialZoom: 14.5,
-            ),
+    switch (_selectedIndex) {
+      case 1: // Automations
+        return SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.geobuzz.geobuzz',
-              ),
-
-              // Geofence Circles
-              CircleLayer(
-                circles: [
-                  // 1. Current Location Radar Ripple
-                  if (_currentLocation != null)
-                    CircleMarker(
-                      point: _currentLocation!,
-                      radius: _currentAccuracy != null && _currentAccuracy! > 20 ? _currentAccuracy! : 45.0,
-                      useRadiusInMeter: true,
-                      color: AppColors.accent.withAlpha(30),
-                      borderColor: AppColors.accent,
-                      borderStrokeWidth: 1.5,
-                    ),
-
-                  // 2. Rule Geofence Zones
-                  ...rules.map((r) {
-                    return CircleMarker(
-                      point: LatLng(r.location.latitude, r.location.longitude),
-                      radius: r.radius,
-                      useRadiusInMeter: true,
-                      color: AppColors.primary.withAlpha(40),
-                      borderColor: AppColors.accent,
-                      borderStrokeWidth: 2,
-                    );
-                  }),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('All Automations', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  ElevatedButton.icon(
+                    onPressed: _openCreateWizard,
+                    icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    label: const Text('New Rule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A2A5)),
+                  ),
                 ],
               ),
+              const SizedBox(height: 16),
+              if (ruleProvider.rules.isEmpty)
+                _buildEmptyRulesPlaceholder()
+              else
+                ...ruleProvider.rules.map((rule) => _buildCleanRuleCard(rule)),
+            ],
+          ),
+        );
 
-              // Markers
-              MarkerLayer(
-                markers: [
-                  // 1. Current User Device Location Marker
-                  if (_currentLocation != null)
-                    Marker(
-                      point: _currentLocation!,
-                      width: 44,
-                      height: 44,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            width: 38,
-                            height: 38,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: AppColors.accent.withAlpha(40),
-                            ),
-                          ),
-                          Container(
-                            width: 20,
-                            height: 20,
-                            decoration: BoxDecoration(
-                              color: AppColors.accent,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.accent.withAlpha(160),
-                                  blurRadius: 10,
-                                  spreadRadius: 2,
+      case 2: // Map canvas
+        return Container(
+          margin: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _buildLiveGeofenceRadarCard(),
+        );
+
+      case 3: // Activity
+        return ListView(
+          padding: const EdgeInsets.all(28),
+          children: [
+            const Text('Activity Stream', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 16),
+            if (historyProvider.history.isEmpty)
+              const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No events recorded yet', style: TextStyle(color: Color(0xFF64748B)))))
+            else
+              ...historyProvider.history.map((item) => _buildCleanHistoryCard(item)),
+          ],
+        );
+
+      case 4: // Settings
+        return ListView(
+          padding: const EdgeInsets.all(28),
+          children: [
+            const Text('Settings & Diagnostics', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const SizedBox(height: 16),
+            _buildCleanSettingsTile('GPS High Precision', 'Continuous ±8m accuracy evaluation', Icons.gps_fixed_rounded),
+            _buildCleanSettingsTile('Background Service', 'Always running foreground notification', Icons.battery_charging_full_rounded),
+            _buildCleanSettingsTile('DND Policy Grant', 'System sound management active', Icons.do_not_disturb_on_outlined),
+          ],
+        );
+
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  Widget _buildCleanRuleCard(RuleModel rule) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F7F5),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(Icons.bolt_rounded, color: Color(0xFF00A2A5), size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(rule.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
+                const SizedBox(height: 2),
+                Text('${rule.trigger.type.displayName} • ${rule.action.type.displayName}', style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              ],
+            ),
+          ),
+          Transform.scale(
+            scale: 0.75,
+            child: Switch(
+              value: rule.isActive,
+              activeTrackColor: const Color(0xFF00A2A5),
+              activeThumbColor: Colors.white,
+              onChanged: (val) => context.read<RuleProvider>().toggleRule(rule.id, val),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCleanHistoryCard(HistoryItem item) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('${item.ruleName} (${item.triggerType})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
+                Text(item.message, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+              ],
+            ),
+          ),
+          Text(DateFormat('hh:mm a').format(item.timestamp), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCleanSettingsTile(String title, String subtitle, IconData icon) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF00A2A5), size: 22),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+              ],
+            ),
+          ),
+          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyRulesPlaceholder() {
+    return Container(
+      padding: const EdgeInsets.all(32),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.add_location_alt_outlined, size: 40, color: Color(0xFF00A2A5)),
+          const SizedBox(height: 12),
+          const Text('No automations created yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+          const SizedBox(height: 4),
+          const Text('Create your first rule to trigger actions based on your location.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          const SizedBox(height: 16),
+          ElevatedButton.icon(
+            onPressed: _openCreateWizard,
+            icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
+            label: const Text('Create Rule', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A2A5)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // MOBILE / TABLET FALLBACK
+  // ==========================================
+  Widget _buildMobileLayout() {
+    final ruleProvider = context.watch<RuleProvider>();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF3F6F8),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        toolbarHeight: 64,
+        titleSpacing: 16,
+        surfaceTintColor: Colors.transparent,
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/images/logo.png',
+              width: 36,
+              height: 36,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 8),
+            RichText(
+              text: const TextSpan(
+                children: [
+                  TextSpan(
+                    text: 'Geo',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF0F172A),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'Buzz',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: Color(0xFF00A2A5),
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          // GPS live status indicator
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFEBF5F1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF10B981),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                const Text(
+                  'GPS Live',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF0D9488),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton(
+            icon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 22),
+            onPressed: _openCommandPalette,
+            tooltip: 'Search (⌘K)',
+          ),
+          const SizedBox(width: 4),
+        ],
+      ),
+      body: _selectedIndex == 0
+          ? _buildSpatialOperatingCenterView(ruleProvider)
+          : _buildSecondaryTabView(),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedIndex > 3 ? 0 : _selectedIndex,
+        onTap: (idx) => setState(() => _selectedIndex = idx),
+        selectedItemColor: const Color(0xFF00A2A5),
+        unselectedItemColor: const Color(0xFF64748B),
+        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Colors.white,
+        elevation: 8,
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Overview'),
+          BottomNavigationBarItem(icon: Icon(Icons.bolt_rounded), label: 'Automations'),
+          BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Map'),
+          BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded), label: 'Activity'),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _openCreateWizard,
+        backgroundColor: const Color(0xFF00A2A5),
+        foregroundColor: Colors.white,
+        elevation: 4,
+        child: const Icon(Icons.add_rounded, size: 26),
+      ),
+    );
+  }
+}
+
+// ==========================================
+// DEDICATED LIVE GEOFENCE RADAR CARD WIDGET
+// ==========================================
+class LiveGeofenceRadarCard extends StatefulWidget {
+  final List<RuleModel> rules;
+  final VoidCallback onOpenMapCanvas;
+  final bool isMobile;
+
+  const LiveGeofenceRadarCard({
+    super.key,
+    required this.rules,
+    required this.onOpenMapCanvas,
+    this.isMobile = false,
+  });
+
+  @override
+  State<LiveGeofenceRadarCard> createState() => _LiveGeofenceRadarCardState();
+}
+
+class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
+  late final MapController _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _mapController = MapController();
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final double cardHeight = widget.isMobile ? 260 : 340;
+
+    return Container(
+      height: cardHeight,
+      decoration: BoxDecoration(
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE5EBEF)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: ValueListenableBuilder<Position?>(
+          valueListenable: LocationService.instance.currentPosition,
+          builder: (context, pos, _) {
+            final LatLng userLoc = pos != null
+                ? LatLng(pos.latitude, pos.longitude)
+                : const LatLng(12.9716, 77.5946); // Default Bengaluru coords
+
+            final activeGeofences = widget.rules.where((r) => r.isActive).toList();
+
+            return Stack(
+              children: [
+                // 1. Live Interactive FlutterMap
+                FlutterMap(
+                  mapController: _mapController,
+                  options: MapOptions(
+                    initialCenter: userLoc,
+                    initialZoom: 14.5,
+                    minZoom: 4,
+                    maxZoom: 18,
+                    interactionOptions: const InteractionOptions(
+                      flags: InteractiveFlag.all,
+                    ),
+                  ),
+                  children: [
+                    // OpenStreetMap CartoDB Positron / OSM Light Tiles
+                    TileLayer(
+                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName: 'com.geobuzz.geobuzz',
+                    ),
+
+                    // Active Geofence Circles
+                    CircleLayer(
+                      circles: [
+                        // User GPS accuracy circle
+                        CircleMarker(
+                          point: userLoc,
+                          radius: 50,
+                          useRadiusInMeter: true,
+                          color: const Color(0xFF00A2A5).withValues(alpha: 0.18),
+                          borderColor: const Color(0xFF00A2A5),
+                          borderStrokeWidth: 1.5,
+                        ),
+                        // Geofence rules circles
+                        ...activeGeofences.map((rule) {
+                          return CircleMarker(
+                            point: LatLng(rule.location.latitude, rule.location.longitude),
+                            radius: rule.radius,
+                            useRadiusInMeter: true,
+                            color: const Color(0xFF00A2A5).withValues(alpha: 0.12),
+                            borderColor: const Color(0xFF00A2A5).withValues(alpha: 0.6),
+                            borderStrokeWidth: 1.5,
+                          );
+                        }),
+                      ],
+                    ),
+
+                    // Markers
+                    MarkerLayer(
+                      markers: [
+                        // User Current Location Pulse Marker
+                        Marker(
+                          point: userLoc,
+                          width: 44,
+                          height: 44,
+                          child: Center(
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: const Color(0xFF00A2A5).withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                Container(
+                                  width: 18,
+                                  height: 18,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF00A2A5),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white, width: 3),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF00A2A5).withValues(alpha: 0.6),
+                                        blurRadius: 8,
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-
-                  // 2. Automation Rule Markers
-                  ...rules.map((r) {
-                    return Marker(
-                      point: LatLng(r.location.latitude, r.location.longitude),
-                      width: 36,
-                      height: 36,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryDark,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 2),
-                          boxShadow: [
-                            BoxShadow(color: AppColors.primary.withAlpha(128), blurRadius: 8),
-                          ],
                         ),
-                        child: Icon(_getActionIcon(r.action.type), color: Colors.white, size: 18),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ],
-          ),
 
-          // Top Info Badge: GPS Status & Coordinates
-          Positioned(
-            top: 12,
-            left: 12,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.bgDark.withAlpha(220),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.borderDark),
-                boxShadow: [
-                  BoxShadow(color: Colors.black.withAlpha(100), blurRadius: 6),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 8,
-                    height: 8,
+                        // Active Geofences Pin Markers
+                        ...activeGeofences.map((rule) {
+                          return Marker(
+                            point: LatLng(rule.location.latitude, rule.location.longitude),
+                            width: 32,
+                            height: 32,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: const Color(0xFF00A2A5), width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 6,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.place_rounded,
+                                color: Color(0xFF00A2A5),
+                                size: 18,
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ],
+                ),
+
+                // 2. Top-Left Overlay Pill: LIVE GEOFENCE RADAR
+                Positioned(
+                  top: widget.isMobile ? 10 : 14,
+                  left: widget.isMobile ? 10 : 14,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 12, vertical: widget.isMobile ? 5 : 7),
                     decoration: BoxDecoration(
-                      color: _currentLocation != null ? AppColors.success : AppColors.warning,
-                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.94),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: widget.isMobile ? 6 : 8,
+                          height: widget.isMobile ? 6 : 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF10B981),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: widget.isMobile ? 5 : 7),
+                        Text(
+                          widget.isMobile ? 'RADAR' : 'LIVE GEOFENCE RADAR',
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 9.5 : 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '• Bengaluru',
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 9.5 : 11,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF64748B),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    _currentLocation != null
-                        ? 'Live GPS • ${_currentLocation!.latitude.toStringAsFixed(4)}, ${_currentLocation!.longitude.toStringAsFixed(4)}'
-                        : 'Locating Device...',
-                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                ),
 
-          // Floating "Locate Me" GPS Center Button
-          Positioned(
-            bottom: 12,
-            right: 12,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _locateDevice(animateMap: true),
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceDark.withAlpha(240),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.borderDark),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withAlpha(120), blurRadius: 8, offset: const Offset(0, 3)),
+                // 3. Top-Right: Fullscreen & Controls
+                Positioned(
+                  top: widget.isMobile ? 10 : 14,
+                  right: widget.isMobile ? 10 : 14,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Recenter Button
+                      InkWell(
+                        onTap: () {
+                          _mapController.move(userLoc, 15.0);
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: EdgeInsets.all(widget.isMobile ? 6 : 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 6,
+                              ),
+                            ],
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Icon(
+                            Icons.my_location_rounded,
+                            size: widget.isMobile ? 14 : 16,
+                            color: const Color(0xFF00A2A5),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+
+                      // Expand to Map Canvas
+                      InkWell(
+                        onTap: widget.onOpenMapCanvas,
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: EdgeInsets.all(widget.isMobile ? 6 : 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.94),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.08),
+                                blurRadius: 6,
+                              ),
+                            ],
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                          ),
+                          child: Icon(
+                            Icons.fullscreen_rounded,
+                            size: widget.isMobile ? 14 : 16,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  child: _isLocating
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent),
-                        )
-                      : const Icon(Icons.my_location_rounded, color: AppColors.accent, size: 20),
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildEmptyRulesState() {
-    return Container(
-      padding: const EdgeInsets.all(32),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.borderDark),
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(20),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.add_location_alt_rounded, size: 36, color: AppColors.accent),
-          ),
-          const SizedBox(height: 16),
-          const Text('No Automations Yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 6),
-          const Text(
-            'Create your first location rule and let GeoBuzz do the work.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _openCreateWizard,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Create Automation'),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-          ),
-        ],
-      ),
-    );
-  }
+                // 4. Bottom-Left: Live GPS Telemetry Coordinates
+                Positioned(
+                  bottom: widget.isMobile ? 10 : 14,
+                  left: widget.isMobile ? 10 : 14,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 10, vertical: widget.isMobile ? 4 : 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0F172A).withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 6,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.satellite_alt_rounded,
+                          color: const Color(0xFF00A2A5),
+                          size: widget.isMobile ? 11 : 13,
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          '${userLoc.latitude.toStringAsFixed(3)}, ${userLoc.longitude.toStringAsFixed(3)}',
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 9.5 : 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            fontFamily: 'monospace',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
 
-  // ==========================================
-  // VIEW B: AUTOMATIONS LIST VIEW
-  // ==========================================
-  Widget _buildAutomationsView({required bool isDesktop}) {
-    final ruleProvider = context.watch<RuleProvider>();
-    final filteredRules = _automationFilter == 'ALL'
-        ? ruleProvider.rules
-        : ruleProvider.rules.where((r) => r.action.type.value == _automationFilter).toList();
-
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(isDesktop ? AppDimensions.lg : AppDimensions.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('All Automations', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-              ElevatedButton.icon(
-                onPressed: _openCreateWizard,
-                icon: const Icon(Icons.add_rounded, size: 16),
-                label: const Text('New Rule'),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Filters
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildFilterChip('ALL', 'All Rules'),
-                _buildFilterChip('ALARM', 'Alarms'),
-                _buildFilterChip('SOUND_PROFILE', 'Sound Profiles'),
-                _buildFilterChip('REMINDER', 'Reminders'),
-                _buildFilterChip('WIFI', 'WiFi'),
-                _buildFilterChip('BLUETOOTH', 'Bluetooth'),
+                // 5. Bottom-Right: Active Geofences Counter
+                Positioned(
+                  bottom: widget.isMobile ? 10 : 14,
+                  right: widget.isMobile ? 10 : 14,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 10, vertical: widget.isMobile ? 4 : 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A2A5),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF00A2A5).withValues(alpha: 0.35),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.radar_rounded, color: Colors.white, size: widget.isMobile ? 12 : 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${activeGeofences.length} ${activeGeofences.length == 1 ? "zone" : "zones"}',
+                          style: TextStyle(
+                            fontSize: widget.isMobile ? 10 : 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          if (filteredRules.isEmpty)
-            _buildEmptyRulesState()
-          else
-            ...filteredRules.map((rule) => _buildModernRuleCard(rule)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String filterKey, String label) {
-    final isSelected = _automationFilter == filterKey;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: isSelected,
-        selectedColor: AppColors.primary,
-        backgroundColor: AppColors.surfaceDark,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.white : AppColors.textSecondaryDark,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
+            );
+          },
         ),
-        onSelected: (_) => setState(() => _automationFilter = filterKey),
       ),
     );
-  }
-
-  // ==========================================
-  // VIEW C: MAP CANVAS VIEW
-  // ==========================================
-  Widget _buildMapCanvasView({required bool isDesktop}) {
-    final ruleProvider = context.watch<RuleProvider>();
-    return _buildLiveRadarMapWidget(ruleProvider.rules, isFullCanvas: true);
-  }
-
-  // ==========================================
-  // VIEW D: ACTIVITY LOGS VIEW
-  // ==========================================
-  Widget _buildActivityView() {
-    final historyProvider = context.watch<HistoryProvider>();
-
-    return ListView(
-      padding: const EdgeInsets.all(AppDimensions.md),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('Trigger Activity Timeline', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-            if (historyProvider.history.isNotEmpty)
-              TextButton.icon(
-                onPressed: () => historyProvider.clearAllHistory(),
-                icon: const Icon(Icons.delete_sweep_rounded, size: 16, color: AppColors.textSecondaryDark),
-                label: const Text('Clear Log', style: TextStyle(color: AppColors.textSecondaryDark)),
-              ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        if (historyProvider.history.isEmpty)
-          const Center(
-            child: Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Text('No trigger events recorded yet.', style: TextStyle(color: AppColors.textSecondaryDark)),
-            ),
-          )
-        else
-          ...historyProvider.history.map((item) => _buildHistoryTimelineCard(item)),
-      ],
-    );
-  }
-
-  Widget _buildHistoryTimelineCard(HistoryItem item) {
-    final dateStr = DateFormat('dd MMM yyyy • hh:mm a').format(item.timestamp);
-    final isSuccess = item.status == 'SUCCESS';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(AppDimensions.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderDark),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: isSuccess ? AppColors.success.withAlpha(30) : AppColors.error.withAlpha(30),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(
-              isSuccess ? Icons.check_circle_rounded : Icons.error_rounded,
-              color: isSuccess ? AppColors.success : AppColors.error,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${item.ruleName} (${item.triggerType})',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                Text(
-                  item.message,
-                  style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          Text(dateStr, style: const TextStyle(fontSize: 11, color: AppColors.textMutedDark)),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // VIEW E: ANALYTICS VIEW
-  // ==========================================
-  Widget _buildAnalyticsView() {
-    final ruleProvider = context.watch<RuleProvider>();
-    final historyProvider = context.watch<HistoryProvider>();
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppDimensions.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Usage Analytics', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-          const SizedBox(height: 4),
-          const Text('Insights on how your location automations run.', style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13)),
-          const SizedBox(height: 24),
-          _buildKPIMetricsRow(ruleProvider.rules.length, ruleProvider.activeCount, historyProvider.history.length),
-        ],
-      ),
-    );
-  }
-
-  // ==========================================
-  // VIEW F: SETTINGS VIEW
-  // ==========================================
-  Widget _buildSettingsView() {
-    return ListView(
-      padding: const EdgeInsets.all(AppDimensions.lg),
-      children: [
-        const Text('Preferences & Hardware Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
-        const SizedBox(height: 20),
-        _buildSettingsTile('Location Precision', 'High GPS Accuracy (±5m)', Icons.location_searching_rounded),
-        _buildSettingsTile('Background Service', 'Always Active Foreground Service', Icons.battery_charging_full_rounded),
-        _buildSettingsTile('Do Not Disturb Permissions', 'System Policy Granted', Icons.do_not_disturb_rounded),
-        _buildSettingsTile('Dark Theme Palette', 'Obsidian Near-Black Navy (Default)', Icons.dark_mode_rounded),
-      ],
-    );
-  }
-
-  Widget _buildSettingsTile(String title, String subtitle, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(AppDimensions.md),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.borderDark),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.accent, size: 22),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                Text(subtitle, style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 12)),
-              ],
-            ),
-          ),
-          const Icon(Icons.check_circle_rounded, color: AppColors.success, size: 20),
-        ],
-      ),
-    );
-  }
-
-  IconData _getActionIcon(ActionType type) {
-    switch (type) {
-      case ActionType.alarm:
-        return Icons.alarm_rounded;
-      case ActionType.soundProfile:
-        return Icons.volume_off_rounded;
-      case ActionType.wifi:
-        return Icons.wifi_rounded;
-      case ActionType.bluetooth:
-        return Icons.bluetooth_rounded;
-      case ActionType.reminder:
-        return Icons.notifications_active_rounded;
-    }
-  }
-
-  Color _getActionColor(ActionType type) {
-    switch (type) {
-      case ActionType.alarm:
-        return AppColors.error;
-      case ActionType.soundProfile:
-        return AppColors.warning;
-      case ActionType.wifi:
-        return AppColors.accent;
-      case ActionType.bluetooth:
-        return Colors.blue;
-      case ActionType.reminder:
-        return AppColors.primaryLight;
-    }
-  }
-
-  String _formatActionDescription(RuleAction action) {
-    switch (action.type) {
-      case ActionType.alarm:
-        return 'Alarm (${action.alarmDurationSeconds}s)';
-      case ActionType.soundProfile:
-        return '${action.soundProfileMode ?? "Silent"} Mode';
-      case ActionType.wifi:
-        return 'WiFi Action';
-      case ActionType.bluetooth:
-        return 'Bluetooth Action';
-      case ActionType.reminder:
-        return action.reminderTitle?.isNotEmpty == true ? action.reminderTitle! : 'Reminder';
-    }
   }
 }

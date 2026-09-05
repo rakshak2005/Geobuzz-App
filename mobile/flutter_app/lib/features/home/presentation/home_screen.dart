@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
+      backgroundColor: const Color(0xFFF3F6F8),
       body: SafeArea(
         child: _selectedTabIndex == 0
             ? _buildDashboardTab()
@@ -49,15 +49,15 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: AppColors.surfaceDark,
-          border: Border(top: BorderSide(color: AppColors.borderDark)),
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE2E8F0))),
         ),
         child: BottomNavigationBar(
           currentIndex: _selectedTabIndex,
           onTap: (index) => setState(() => _selectedTabIndex = index),
-          backgroundColor: AppColors.surfaceDark,
-          selectedItemColor: AppColors.primaryLight,
-          unselectedItemColor: AppColors.textSecondaryDark,
+          backgroundColor: Colors.white,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: const Color(0xFF64748B),
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_rounded),
@@ -111,9 +111,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: const BoxDecoration(
-                          gradient: AppColors.primaryGradient,
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Icon(Icons.radar_rounded, color: Colors.white, size: 20),
                       ),
@@ -123,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
-                          color: Colors.white,
+                          color: Color(0xFF0F172A),
                           letterSpacing: 0.5,
                         ),
                       ),
@@ -132,12 +132,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 4),
                   Text(
                     'Welcome back, ${authProvider.userName ?? "Explorer"}',
-                    style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
+                    style: const TextStyle(color: Color(0xFF64748B), fontSize: 13),
                   ),
                 ],
               ),
               IconButton(
-                icon: const Icon(Icons.logout_rounded, color: AppColors.textSecondaryDark),
+                icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B)),
                 onPressed: () {
                   authProvider.logout();
                   Navigator.of(context).pushReplacement(
@@ -162,11 +162,11 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Text(
                 'Active Automations',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               ),
               Text(
                 '${ruleProvider.rules.length} Total',
-                style: const TextStyle(color: AppColors.primaryLight, fontWeight: FontWeight.bold, fontSize: 13),
+                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13),
               ),
             ],
           ),
@@ -193,11 +193,11 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               const Text(
                 'Recent Activity',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
               ),
               TextButton(
                 onPressed: () => setState(() => _selectedTabIndex = 1),
-                child: const Text('View All', style: TextStyle(color: AppColors.primaryLight, fontSize: 13)),
+                child: const Text('View All', style: TextStyle(color: AppColors.primary, fontSize: 13)),
               ),
             ],
           ),
@@ -207,13 +207,13 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               padding: const EdgeInsets.all(AppDimensions.md),
               decoration: BoxDecoration(
-                color: AppColors.surfaceDark,
+                color: Colors.white,
                 borderRadius: AppDimensions.roundedMd,
-                border: Border.all(color: AppColors.borderDark),
+                border: Border.all(color: const Color(0xFFE2E8F0)),
               ),
               child: const Text(
                 'No geofence events recorded yet. Click "Test Trigger" on any card or travel across geofence boundaries.',
-                style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
               ),
             )
           else
@@ -232,19 +232,17 @@ class _HomeScreenState extends State<HomeScreen> {
         return Container(
           padding: const EdgeInsets.all(AppDimensions.md),
           decoration: BoxDecoration(
-            gradient: isTracking ? AppColors.cardGradientDark : null,
-            color: isTracking ? null : AppColors.surfaceDark,
+            color: Colors.white,
             borderRadius: AppDimensions.roundedLg,
             border: Border.all(
-              color: isTracking ? AppColors.primaryLight.withAlpha(80) : AppColors.borderDark,
+              color: isTracking ? AppColors.primary.withAlpha(80) : const Color(0xFFE2E8F0),
             ),
             boxShadow: [
-              if (isTracking)
-                BoxShadow(
-                  color: AppColors.primary.withAlpha(30),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: Row(
@@ -252,12 +250,12 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isTracking ? AppColors.success.withAlpha(50) : AppColors.surfaceLightDark,
+                  color: isTracking ? const Color(0xFFD1FAE5) : const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   isTracking ? Icons.gps_fixed_rounded : Icons.gps_off_rounded,
-                  color: isTracking ? AppColors.success : AppColors.textMutedDark,
+                  color: isTracking ? const Color(0xFF059669) : const Color(0xFF64748B),
                   size: 26,
                 ),
               ),
@@ -273,7 +271,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           height: 8,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isTracking ? AppColors.success : AppColors.warning,
+                            color: isTracking ? const Color(0xFF059669) : AppColors.warning,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -283,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 0.5,
-                            color: isTracking ? AppColors.success : AppColors.warning,
+                            color: isTracking ? const Color(0xFF059669) : AppColors.warning,
                           ),
                         ),
                       ],
@@ -294,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: Color(0xFF0F172A),
                       ),
                     ),
                   ],
@@ -302,7 +300,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               Switch(
                 value: isTracking,
-                activeColor: AppColors.primaryLight,
+                activeColor: AppColors.primary,
                 onChanged: (val) {
                   if (val) {
                     RuleEngine.instance.initialize();
@@ -329,11 +327,18 @@ class _HomeScreenState extends State<HomeScreen> {
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(AppDimensions.md),
           decoration: BoxDecoration(
-            color: AppColors.surfaceDark,
+            color: Colors.white,
             borderRadius: AppDimensions.roundedLg,
             border: Border.all(
-              color: rule.isActive ? AppColors.borderDark : AppColors.borderDark.withAlpha(100),
+              color: const Color(0xFFE2E8F0),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,18 +356,18 @@ class _HomeScreenState extends State<HomeScreen> {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            color: rule.isActive ? Colors.white : AppColors.textMutedDark,
+                            color: rule.isActive ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
                           ),
                         ),
                         const SizedBox(height: 2),
                         Row(
                           children: [
-                            const Icon(Icons.place_rounded, size: 13, color: AppColors.primaryLight),
+                            const Icon(Icons.place_rounded, size: 13, color: AppColors.primary),
                             const SizedBox(width: 4),
                             Flexible(
                               child: Text(
                                 '${rule.location.name} • ${rule.radius.toInt()} m radius',
-                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondaryDark),
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -388,7 +393,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: isInside ? AppColors.success.withAlpha(40) : AppColors.surfaceLightDark,
+                    color: isInside ? const Color(0xFFD1FAE5) : const Color(0xFFF1F5F9),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Row(
@@ -397,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       Icon(
                         isInside ? Icons.check_circle_rounded : Icons.radar_rounded,
                         size: 13,
-                        color: isInside ? AppColors.success : AppColors.secondary,
+                        color: isInside ? const Color(0xFF059669) : AppColors.secondary,
                       ),
                       const SizedBox(width: 6),
                       Text(
@@ -405,7 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: isInside ? AppColors.success : AppColors.secondary,
+                          color: isInside ? const Color(0xFF059669) : AppColors.secondary,
                         ),
                       ),
                     ],
@@ -416,8 +421,9 @@ class _HomeScreenState extends State<HomeScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceLightDark.withAlpha(128),
+                  color: const Color(0xFFF8FAFC),
                   borderRadius: AppDimensions.roundedMd,
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
                 child: Row(
                   children: [
@@ -429,7 +435,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
-                          color: rule.isActive ? Colors.white : AppColors.textSecondaryDark,
+                          color: rule.isActive ? const Color(0xFF0F172A) : const Color(0xFF64748B),
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -470,21 +476,21 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withAlpha(40),
+                            color: AppColors.primary.withAlpha(20),
                             borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: AppColors.primary.withAlpha(80)),
+                            border: Border.all(color: AppColors.primary.withAlpha(60)),
                           ),
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.play_arrow_rounded, size: 14, color: AppColors.primaryLight),
+                              Icon(Icons.play_arrow_rounded, size: 14, color: AppColors.primary),
                               SizedBox(width: 4),
                               Text(
                                 'Test Trigger',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
-                                  color: AppColors.primaryLight,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ],
@@ -497,7 +503,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondaryDark),
+                        icon: const Icon(Icons.edit_outlined, size: 18, color: Color(0xFF64748B)),
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => RuleWizardScreen(existingRule: rule)),
@@ -569,19 +575,19 @@ class _HomeScreenState extends State<HomeScreen> {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(AppDimensions.sm + 4),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: Colors.white,
         borderRadius: AppDimensions.roundedMd,
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(40),
+              color: const Color(0xFFD1FAE5),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: const Icon(Icons.check_circle_outline_rounded, color: AppColors.success, size: 16),
+            child: const Icon(Icons.check_circle_outline_rounded, color: Color(0xFF059669), size: 16),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -590,11 +596,11 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 Text(
                   '${item.ruleName} (${item.triggerType})',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 Text(
                   item.message ?? '',
-                  style: const TextStyle(color: AppColors.textSecondaryDark, fontSize: 11),
+                  style: const TextStyle(color: Color(0xFF64748B), fontSize: 11),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -603,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           Text(
             DateFormat('hh:mm a').format(item.timestamp),
-            style: const TextStyle(color: AppColors.textMutedDark, fontSize: 11),
+            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
           ),
         ],
       ),
@@ -614,27 +620,27 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       padding: const EdgeInsets.all(AppDimensions.xl),
       decoration: BoxDecoration(
-        color: AppColors.surfaceDark,
+        color: Colors.white,
         borderRadius: AppDimensions.roundedLg,
-        border: Border.all(color: AppColors.borderDark),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.primary.withAlpha(30),
+              color: AppColors.primary.withAlpha(20),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.add_location_alt_rounded, size: 36, color: AppColors.primaryLight),
+            child: const Icon(Icons.add_location_alt_rounded, size: 36, color: AppColors.primary),
           ),
           const SizedBox(height: 16),
-          const Text('No Automations Yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('No Automations Yet', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
           const SizedBox(height: 6),
           const Text(
             'Create your first rule to silence your phone at office or set an arrival alarm.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondaryDark, fontSize: 13),
+            style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
@@ -655,13 +661,13 @@ class _HomeScreenState extends State<HomeScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.surfaceDark,
-        title: const Text('Delete Automation?', style: TextStyle(color: Colors.white)),
-        content: Text('Are you sure you want to remove "${rule.name}"?', style: const TextStyle(color: AppColors.textSecondaryDark)),
+        backgroundColor: Colors.white,
+        title: const Text('Delete Automation?', style: TextStyle(color: Color(0xFF0F172A))),
+        content: Text('Are you sure you want to remove "${rule.name}"?', style: const TextStyle(color: Color(0xFF64748B))),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondaryDark)),
+            child: const Text('Cancel', style: TextStyle(color: Color(0xFF64748B))),
           ),
           ElevatedButton(
             onPressed: () {

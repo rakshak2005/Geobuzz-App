@@ -32,8 +32,8 @@ class GeoBuzzApp extends StatelessWidget {
         title: 'GeoBuzz - Automate by Location',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.dark, // Default to sleek dark theme
+        darkTheme: AppTheme.lightTheme,
+        themeMode: ThemeMode.light, // Default to clean present light theme
         home: const SplashScreen(),
       ),
     );
@@ -75,90 +75,84 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!hasLocationPermission) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => PermissionOnboardingScreen(
-            onComplete: () {
-              if (mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => authProvider.isAuthenticated
-                        ? const ResponsiveScaffold()
-                        : const AuthScreen(),
-                  ),
-                );
-              }
-            },
-          ),
+          builder: (_) => const PermissionOnboardingScreen(),
         ),
       );
     } else {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => authProvider.isAuthenticated
-                ? const ResponsiveScaffold()
-                : const AuthScreen(),
-          ),
-        );
-      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => authProvider.isAuthenticated
+              ? const ResponsiveScaffold()
+              : const AuthScreen(),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.bgDark,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const GeoBuzzPreloader(
-              size: 110,
-            ),
-            const SizedBox(height: 28),
-            RichText(
-              text: const TextSpan(
-                children: [
-                  TextSpan(
-                    text: 'Geo',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: -0.5,
-                    ),
+      backgroundColor: const Color(0xFFF1F6F7),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const GeoBuzzPreloader(
+                  size: 110,
+                ),
+                const SizedBox(height: 28),
+                RichText(
+                  text: const TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'Geo',
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFF0F172A),
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                      TextSpan(
+                        text: 'Buzz',
+                        style: TextStyle(
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.primary,
+                          letterSpacing: -0.5,
+                        ),
+                      ),
+                    ],
                   ),
-                  TextSpan(
-                    text: 'Buzz',
-                    style: TextStyle(
-                      fontSize: 36,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.accent,
-                      letterSpacing: -0.5,
-                    ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'AUTOMATE BY LOCATION',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.0,
+                    color: Color(0xFF64748B),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your phone knows where you are.\nGeoBuzz knows what to do.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF64748B),
+                    fontWeight: FontWeight.w500,
+                    height: 1.4,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 6),
-            const Text(
-              'AUTOMATE BY LOCATION',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 2.0,
-                color: AppColors.textSecondaryDark,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Your phone knows where you are. GeoBuzz knows what to do.',
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textMutedDark,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

@@ -15,7 +15,6 @@ dependencies:
 
   # Location & Distance Calculation
   geolocator: ^12.0.0
-  geocoding: ^3.0.0
 
   # Map - OpenStreetMap with flutter_map & latlong2 (pure Dart, reliable, free)
   flutter_map: ^7.0.2
@@ -30,7 +29,7 @@ dependencies:
   # Notifications & Alarms
   flutter_local_notifications: ^17.2.2
   audioplayers: ^6.0.0
-  vibration: ^2.0.0
+  vibration: ^3.2.0
 
   # HTTP & API Sync
   dio: ^5.4.3+1

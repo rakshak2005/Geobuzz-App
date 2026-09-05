@@ -26,15 +26,15 @@ class _GeoBuzzPreloaderState extends State<GeoBuzzPreloader>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1600),
+      duration: const Duration(milliseconds: 2800), // Smooth, slow breathing cycle
     )..repeat(reverse: true);
 
-    _pulseAnimation = Tween<double>(begin: 0.94, end: 1.06).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    _pulseAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
     );
 
-    _glowAnimation = Tween<double>(begin: 0.2, end: 0.7).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    _glowAnimation = Tween<double>(begin: 0.15, end: 0.45).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutCubic),
     );
   }
 
@@ -58,29 +58,27 @@ class _GeoBuzzPreloaderState extends State<GeoBuzzPreloader>
                 child: Container(
                   width: widget.size,
                   height: widget.size,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withOpacity(_glowAnimation.value),
-                        blurRadius: 36,
-                        spreadRadius: 8,
-                      ),
-                      BoxShadow(
-                        color: AppColors.accent.withOpacity(_glowAnimation.value * 0.7),
-                        blurRadius: 20,
-                        spreadRadius: 2,
+                        color: AppColors.primary.withValues(alpha: _glowAnimation.value),
+                        blurRadius: 40,
+                        spreadRadius: 10,
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: Image.asset(
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: widget.size,
+                    height: widget.size,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => Image.asset(
                       'assets/images/app_logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.cover,
-                      ),
+                      width: widget.size,
+                      height: widget.size,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -94,7 +92,7 @@ class _GeoBuzzPreloaderState extends State<GeoBuzzPreloader>
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondaryDark,
+                color: Color(0xFF64748B),
                 letterSpacing: 0.5,
               ),
             ),

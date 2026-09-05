@@ -21,26 +21,26 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.interTextTheme(
         ThemeData.dark().textTheme.copyWith(
-          headlineMedium: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimaryDark,
-          ),
-          titleLarge: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryDark,
-          ),
-          bodyLarge: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.normal,
-            color: AppColors.textPrimaryDark,
-          ),
-          bodyMedium: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondaryDark,
-          ),
-        ),
+              headlineMedium: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimaryDark,
+              ),
+              titleLarge: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimaryDark,
+              ),
+              bodyLarge: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.normal,
+                color: AppColors.textPrimaryDark,
+              ),
+              bodyMedium: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondaryDark,
+              ),
+            ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardDark,
@@ -91,8 +91,10 @@ class AppTheme {
           borderRadius: AppDimensions.roundedMd,
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: const TextStyle(color: AppColors.textMutedDark, fontSize: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle:
+            const TextStyle(color: AppColors.textMutedDark, fontSize: 14),
       ),
     );
   }
@@ -114,26 +116,26 @@ class AppTheme {
       ),
       textTheme: GoogleFonts.interTextTheme(
         ThemeData.light().textTheme.copyWith(
-          headlineMedium: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimaryLight,
-          ),
-          titleLarge: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimaryLight,
-          ),
-          bodyLarge: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.normal,
-            color: AppColors.textPrimaryLight,
-          ),
-          bodyMedium: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondaryLight,
-          ),
-        ),
+              headlineMedium: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimaryLight,
+              ),
+              titleLarge: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimaryLight,
+              ),
+              bodyLarge: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.normal,
+                color: AppColors.textPrimaryLight,
+              ),
+              bodyMedium: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondaryLight,
+              ),
+            ),
       ),
       cardTheme: CardThemeData(
         color: AppColors.cardLight,
@@ -185,8 +187,10 @@ class AppTheme {
           borderRadius: AppDimensions.roundedMd,
           borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        hintStyle: const TextStyle(color: AppColors.textMutedLight, fontSize: 14),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        hintStyle:
+            const TextStyle(color: AppColors.textMutedLight, fontSize: 14),
       ),
     );
   }
