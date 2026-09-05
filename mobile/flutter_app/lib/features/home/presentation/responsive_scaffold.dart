@@ -534,11 +534,25 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   // ------------------------------------
   Widget _buildSpatialOperatingCenterView(RuleProvider ruleProvider) {
     final rules = ruleProvider.rules;
-    final activeCount = ruleProvider.activeCount;
+    final activeRules = rules.where((r) => r.isActive).toList();
+    final activeCount = activeRules.length;
     final totalCount = rules.length;
     final todayStr = DateFormat('EEE, d MMM').format(DateTime.now());
     final authProvider = context.watch<AuthProvider>();
     final userName = authProvider.userName ?? 'there';
+
+    // Dynamic subtitle status message (Audit #4, #5)
+    final String statusMessage = activeCount == 0
+        ? (totalCount == 0
+            ? 'No automations configured yet.'
+            : '0 automations running · Turn on an automation below.')
+        : (activeCount == 1
+            ? '1 automation is active and ready.'
+            : '$activeCount automations are active and ready.');
+
+    final String activeKpiFooter = activeCount == 0
+        ? 'No automations running'
+        : (activeCount == 1 ? '1 running normally' : 'All $activeCount running normally');
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -607,10 +621,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      '$activeCount automations are active and ready.',
-                      style: const TextStyle(
+                      statusMessage,
+                      style: TextStyle(
                         fontSize: 12.5,
-                        color: Color(0xFF64748B),
+                        color: activeCount > 0 ? const Color(0xFF00A2A5) : const Color(0xFF64748B),
+                        fontWeight: activeCount > 0 ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -644,10 +659,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '$activeCount automations are active and ready.',
-                          style: const TextStyle(
+                          statusMessage,
+                          style: TextStyle(
                             fontSize: 13.5,
-                            color: Color(0xFF64748B),
+                            color: activeCount > 0 ? const Color(0xFF00A2A5) : const Color(0xFF64748B),
+                            fontWeight: activeCount > 0 ? FontWeight.w600 : FontWeight.w500,
                           ),
                         ),
                       ],
@@ -680,7 +696,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               SizedBox(height: isMobile ? 14 : 20),
 
               // ------------------------------------
-              // ROW 1: 3 STAT CARDS (Responsive Wrap/Row)
+              // ROW 1: 3 STAT CARDS (Responsive Wrap/Row) (Audit #5, #6)
               // ------------------------------------
               if (isMobile)
                 Column(
@@ -691,8 +707,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                           child: _buildTopStatCard(
                             title: 'ACTIVE AUTOMATIONS',
                             value: activeCount.toString().padLeft(2, '0'),
-                            footerText: 'All running normally',
-                            footerColor: const Color(0xFF0D9488),
+                            footerText: activeKpiFooter,
+                            footerColor: activeCount > 0 ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
                             icon: Icons.bolt_rounded,
                             iconBg: const Color(0xFFE6F7F5),
                             iconColor: const Color(0xFF00A2A5),
@@ -703,7 +719,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         Expanded(
                           child: _buildTopStatCard(
                             title: 'SAVED PLACES',
-                            value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '03',
+                            value: totalCount.toString().padLeft(2, '0'),
                             footerText: '$totalCount places configured',
                             footerColor: const Color(0xFF64748B),
                             icon: Icons.bookmark_border_rounded,
@@ -716,8 +732,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                     const SizedBox(height: 10),
                     _buildTopStatCard(
-                      title: 'AUTOMATION STATUS',
-                      value: 'Active',
+                      title: 'LOCATION STATUS',
+                      value: 'Ready',
                       footerText: 'GPS active · ±8m',
                       footerColor: const Color(0xFF0D9488),
                       icon: Icons.filter_center_focus_rounded,
@@ -735,8 +751,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                       child: _buildTopStatCard(
                         title: 'ACTIVE AUTOMATIONS',
                         value: activeCount.toString().padLeft(2, '0'),
-                        footerText: 'All running normally',
-                        footerColor: const Color(0xFF0D9488),
+                        footerText: activeKpiFooter,
+                        footerColor: activeCount > 0 ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
                         icon: Icons.bolt_rounded,
                         iconBg: const Color(0xFFE6F7F5),
                         iconColor: const Color(0xFF00A2A5),
@@ -748,7 +764,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     Expanded(
                       child: _buildTopStatCard(
                         title: 'SAVED PLACES',
-                        value: totalCount > 0 ? totalCount.toString().padLeft(2, '0') : '03',
+                        value: totalCount.toString().padLeft(2, '0'),
                         footerText: '$totalCount places configured',
                         footerColor: const Color(0xFF64748B),
                         icon: Icons.bookmark_border_rounded,
@@ -758,10 +774,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                     const SizedBox(width: 16),
 
-                    // Card 3: GPS ACCURACY
+                    // Card 3: LOCATION STATUS (Audit #6)
                     Expanded(
                       child: _buildTopStatCard(
-                        title: 'SYSTEM STATUS',
+                        title: 'LOCATION STATUS',
                         value: 'Ready',
                         footerText: 'GPS active · ±8m',
                         footerColor: const Color(0xFF0D9488),
@@ -775,14 +791,14 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               SizedBox(height: isMobile ? 14 : 20),
 
               // ------------------------------------
-              // ROW 2: RADAR CANVAS + ACTIVE AUTOMATIONS
+              // ROW 2: RADAR CANVAS + UP NEXT PANEL (Audit #7, #8)
               // ------------------------------------
               if (isMobile || isTablet)
                 Column(
                   children: [
                     _buildLiveGeofenceRadarCard(isMobile: isMobile),
                     const SizedBox(height: 14),
-                    _buildAutomationPulseCard(rules, isMobile: isMobile),
+                    _buildUpNextPanelCard(rules, isMobile: isMobile),
                   ],
                 )
               else
@@ -796,10 +812,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                     const SizedBox(width: 20),
 
-                    // Right: ACTIVE AUTOMATIONS (Flex 4)
+                    // Right: UP NEXT (Flex 4) (Audit #7, #8)
                     Expanded(
                       flex: 4,
-                      child: _buildAutomationPulseCard(rules),
+                      child: _buildUpNextPanelCard(rules),
                     ),
                   ],
                 ),
@@ -932,9 +948,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // ACTIVE AUTOMATIONS CARD
+  // UP NEXT PANEL CARD (Audit #4, #7, #8)
   // ==========================================
-  Widget _buildAutomationPulseCard(List<RuleModel> rules, {bool isMobile = false}) {
+  Widget _buildUpNextPanelCard(List<RuleModel> rules, {bool isMobile = false}) {
+    final activeRules = rules.where((r) => r.isActive).toList();
+
     return Container(
       height: isMobile ? null : 340,
       padding: EdgeInsets.all(isMobile ? 16 : 20),
@@ -952,20 +970,22 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    'ACTIVE AUTOMATIONS',
+                children: [
+                  const Text(
+                    'UP NEXT',
                     style: TextStyle(
                       fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
+                      fontWeight: FontWeight.w800,
                       letterSpacing: 1.0,
-                      color: Color(0xFF64748B),
+                      color: Color(0xFF00A2A5),
                     ),
                   ),
-                  SizedBox(height: 2),
+                  const SizedBox(height: 2),
                   Text(
-                    'Ready to run',
-                    style: TextStyle(
+                    activeRules.isEmpty
+                        ? 'No active automations'
+                        : '${activeRules.length} ${activeRules.length == 1 ? "automation ready" : "automations ready"}',
+                    style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF0F172A),
@@ -973,41 +993,72 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   ),
                 ],
               ),
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD6F3F0),
-                  borderRadius: BorderRadius.circular(8),
+              InkWell(
+                onTap: () => setState(() => _selectedIndex = 1),
+                borderRadius: BorderRadius.circular(8),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE6F7F5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF007A7C), size: 18),
                 ),
-                child: const Icon(Icons.more_horiz_rounded, color: Color(0xFF007A7C), size: 20),
               ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // Item 1
-          _buildAutomationPulseItem(
-            title: rules.isNotEmpty ? rules[0].name : 'Office Silence',
-            subtitle: rules.isNotEmpty
-                ? 'When I ${rules[0].trigger.type.displayName.toLowerCase()} within ${rules[0].radius.toInt()} m → ${_formatActionHuman(rules[0].action)}'
-                : 'When I arrive within 100 m → Silent mode',
-            icon: rules.isNotEmpty ? _getActionIcon(rules[0].action.type) : Icons.volume_off_rounded,
-          ),
-          const SizedBox(height: 10),
+          // Dynamic Automation List or Empty State (Audit #4)
+          if (activeRules.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFFEEF2F6)),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    const Icon(Icons.power_settings_new_rounded, color: Color(0xFF94A3B8), size: 28),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No automations currently running',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Enable an automation below or create a new one to let GeoBuzz act automatically.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else ...[
+            _buildUpNextItem(
+              title: activeRules[0].name,
+              subtitle: 'Arrive within ${activeRules[0].radius.toInt()} m of ${activeRules[0].location.name} → ${_formatActionHuman(activeRules[0].action)}',
+              icon: _getActionIcon(activeRules[0].action.type),
+              accentColor: _getActionAccentColor(activeRules[0].action.type),
+            ),
+            if (activeRules.length > 1) ...[
+              const SizedBox(height: 10),
+              _buildUpNextItem(
+                title: activeRules[1].name,
+                subtitle: '${activeRules[1].trigger.type.displayName} within ${activeRules[1].radius.toInt()} m of ${activeRules[1].location.name} → ${_formatActionHuman(activeRules[1].action)}',
+                icon: _getActionIcon(activeRules[1].action.type),
+                accentColor: _getActionAccentColor(activeRules[1].action.type),
+              ),
+            ],
+          ],
 
-          // Item 2
-          _buildAutomationPulseItem(
-            title: rules.length > 1 ? rules[1].name : 'Bus Stop Alarm',
-            subtitle: rules.length > 1
-                ? 'When I ${rules[1].trigger.type.displayName.toLowerCase()} within ${rules[1].radius.toInt()} m → ${_formatActionHuman(rules[1].action)}'
-                : 'When I approach within 200 m → Ring alarm',
-            icon: rules.length > 1 ? _getActionIcon(rules[1].action.type) : Icons.alarm_rounded,
-          ),
+          const Spacer(),
 
-          SizedBox(height: isMobile ? 14 : 20),
-
-          // + Create automation CTA (Full-width Teal Button)
+          // + Create automation CTA
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
@@ -1035,6 +1086,21 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     );
   }
 
+  Color _getActionAccentColor(ActionType type) {
+    switch (type) {
+      case ActionType.alarm:
+        return const Color(0xFFF59E0B);
+      case ActionType.soundProfile:
+        return const Color(0xFF8B5CF6);
+      case ActionType.wifi:
+        return const Color(0xFF3B82F6);
+      case ActionType.bluetooth:
+        return const Color(0xFF0284C7);
+      case ActionType.reminder:
+        return const Color(0xFF10B981);
+    }
+  }
+
   IconData _getActionIcon(ActionType type) {
     switch (type) {
       case ActionType.alarm:
@@ -1053,11 +1119,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   String _formatActionHuman(RuleAction action) {
     switch (action.type) {
       case ActionType.alarm:
-        return 'Ring alarm (${action.alarmDurationSeconds}s)';
+        return 'Ring alarm for ${action.alarmDurationSeconds} sec';
       case ActionType.soundProfile:
         return 'Switch to ${action.soundProfileMode ?? "Silent"}';
       case ActionType.wifi:
-        return 'Toggle WiFi';
+        return 'Toggle Wi-Fi';
       case ActionType.bluetooth:
         return 'Toggle Bluetooth';
       case ActionType.reminder:
@@ -1067,10 +1133,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     }
   }
 
-  Widget _buildAutomationPulseItem({
+  Widget _buildUpNextItem({
     required String title,
     required String subtitle,
     required IconData icon,
+    required Color accentColor,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1085,10 +1152,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: const Color(0xFFE3F7F5),
+              color: accentColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, color: const Color(0xFF00A2A5), size: 17),
+            child: Icon(icon, color: accentColor, size: 17),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -1102,6 +1169,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     fontWeight: FontWeight.w700,
                     color: Color(0xFF0F172A),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 1),
                 Text(
@@ -1111,16 +1180,25 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     fontWeight: FontWeight.w500,
                     color: Color(0xFF64748B),
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           ),
           Container(
-            width: 8,
-            height: 8,
-            decoration: const BoxDecoration(
-              color: Color(0xFF10B981),
-              shape: BoxShape.circle,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE3F7F5),
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: const Text(
+              'Active',
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF007A7C),
+              ),
             ),
           ),
         ],
@@ -1267,7 +1345,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // BOTTOM ROW: RECENT ACTIVITY CARD
+  // BOTTOM ROW: RECENT ACTIVITY CARD (Audit #9, #23, #24)
   // ==========================================
   Widget _buildRecentActivityBottomCard({bool isMobile = false}) {
     final historyProvider = context.watch<HistoryProvider>();
@@ -1334,10 +1412,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE3F7F5),
+                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.do_not_disturb_on_outlined, color: Color(0xFF00A2A5), size: 16),
+                child: const Icon(Icons.volume_off_rounded, color: Color(0xFF8B5CF6), size: 16),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1345,7 +1423,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.isNotEmpty ? history[0].ruleName : 'Silent mode triggered at Office',
+                      history.isNotEmpty ? history[0].ruleName : 'Office Silent Mode',
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -1355,8 +1433,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     const SizedBox(height: 1),
                     Text(
                       history.isNotEmpty
-                          ? DateFormat('hh:mm a').format(history[0].timestamp)
-                          : 'Today • 9:12 AM',
+                          ? 'Arrived at ${history[0].locationName} · ${history[0].message ?? "Silent mode enabled"}'
+                          : 'Arrived at Office · Silent mode enabled',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF64748B),
@@ -1364,6 +1442,12 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                   ],
                 ),
+              ),
+              Text(
+                history.isNotEmpty
+                    ? DateFormat('hh:mm a').format(history[0].timestamp)
+                    : '9:12 AM',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1377,10 +1461,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF1F5F7),
+                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.location_on_outlined, color: Color(0xFF64748B), size: 16),
+                child: const Icon(Icons.alarm_rounded, color: Color(0xFFF59E0B), size: 16),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1388,7 +1472,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.length > 1 ? history[1].ruleName : 'Arrived at destination',
+                      history.length > 1 ? history[1].ruleName : 'Bus Stop Alert',
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -1398,8 +1482,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     const SizedBox(height: 1),
                     Text(
                       history.length > 1
-                          ? DateFormat('hh:mm a').format(history[1].timestamp)
-                          : 'Yesterday • 6:26 PM',
+                          ? 'Approaching ${history[1].locationName} · ${history[1].message ?? "Alarm triggered"}'
+                          : 'Approaching Majestic Bus Stop · Alarm triggered',
                       style: const TextStyle(
                         fontSize: 11,
                         color: Color(0xFF64748B),
@@ -1407,6 +1491,12 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     ),
                   ],
                 ),
+              ),
+              Text(
+                history.length > 1
+                    ? DateFormat('hh:mm a').format(history[1].timestamp)
+                    : 'Yesterday',
+                style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1418,12 +1508,40 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   // ==========================================
   // SECONDARY TABS (Automations, Map, Activity, Settings)
   // ==========================================
+  String _automationFilter = 'All';
+  final TextEditingController _automationsSearchController = TextEditingController();
+
   Widget _buildSecondaryTabView() {
     final ruleProvider = context.watch<RuleProvider>();
     final historyProvider = context.watch<HistoryProvider>();
 
     switch (_selectedIndex) {
-      case 1: // Automations
+      case 1: // Automations (Audit #25, #26, #39)
+        final query = _automationsSearchController.text.trim().toLowerCase();
+        final filteredRules = ruleProvider.rules.where((r) {
+          final matchesSearch = query.isEmpty ||
+              r.name.toLowerCase().contains(query) ||
+              r.location.name.toLowerCase().contains(query);
+          if (!matchesSearch) return false;
+
+          switch (_automationFilter) {
+            case 'Active':
+              return r.isActive;
+            case 'Paused':
+              return !r.isActive;
+            case 'Alarm':
+              return r.action.type == ActionType.alarm;
+            case 'Sound':
+              return r.action.type == ActionType.soundProfile;
+            case 'Wi-Fi':
+              return r.action.type == ActionType.wifi;
+            case 'Reminder':
+              return r.action.type == ActionType.reminder;
+            default:
+              return true;
+          }
+        }).toList();
+
         return SingleChildScrollView(
           padding: const EdgeInsets.all(28),
           child: Column(
@@ -1432,20 +1550,94 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('All Automations', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Automations', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                      const SizedBox(height: 2),
+                      Text('${ruleProvider.activeCount} active · ${ruleProvider.rules.length} total', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                    ],
+                  ),
                   ElevatedButton.icon(
                     onPressed: _openCreateWizard,
-                    icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-                    label: const Text('Create automation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A2A5)),
+                    icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+                    label: const Text('Create automation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF00A2A5),
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (ruleProvider.rules.isEmpty)
+              const SizedBox(height: 20),
+
+              // Search & Filter Toolbar (Audit #25)
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                      ),
+                      child: TextField(
+                        controller: _automationsSearchController,
+                        onChanged: (_) => setState(() {}),
+                        style: const TextStyle(fontSize: 13),
+                        decoration: const InputDecoration(
+                          hintText: 'Search automations or places...',
+                          hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                          prefixIcon: Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(vertical: 10),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Filter Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: ['All', 'Active', 'Paused', 'Alarm', 'Sound', 'Wi-Fi', 'Reminder'].map((filter) {
+                    final isSelected = _automationFilter == filter;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: ChoiceChip(
+                        label: Text(filter),
+                        selected: isSelected,
+                        selectedColor: const Color(0xFF00A2A5),
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFE2E8F0)),
+                        labelStyle: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFF475569),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                        onSelected: (_) => setState(() => _automationFilter = filter),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Automation Templates Section (Audit #39)
+              if (ruleProvider.rules.isEmpty) ...[
+                _buildAutomationTemplatesBanner(),
+                const SizedBox(height: 20),
+              ],
+
+              if (filteredRules.isEmpty)
                 _buildEmptyRulesPlaceholder()
               else
-                ...ruleProvider.rules.map((rule) => _buildCleanRuleCard(rule)),
+                ...filteredRules.map((rule) => _buildCleanRuleCard(rule)),
             ],
           ),
         );
@@ -1491,40 +1683,158 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     }
   }
 
+  Widget _buildAutomationTemplatesBanner() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDFB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFCCECEB)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00A2A5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
+              ),
+              const SizedBox(width: 10),
+              const Text(
+                'Try ready-made automations',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF0F172A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Quickly set up popular routines with one tap.',
+            style: TextStyle(fontSize: 12.5, color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 14),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              _buildTemplateChip('Work Silence', 'Office · Arrive → Silent', Icons.volume_off_rounded, const Color(0xFF8B5CF6)),
+              _buildTemplateChip('Bus Stop Alert', 'Transit · Approach → Alarm', Icons.alarm_rounded, const Color(0xFFF59E0B)),
+              _buildTemplateChip('Home Wi-Fi', 'Home · Arrive → Wi-Fi', Icons.wifi_rounded, const Color(0xFF3B82F6)),
+              _buildTemplateChip('Grocery Note', 'Market · Arrive → Note', Icons.notifications_active_rounded, const Color(0xFF10B981)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTemplateChip(String title, String subtitle, IconData icon, Color accent) {
+    return InkWell(
+      onTap: _openCreateWizard,
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFD1EBEA)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: accent),
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF0F172A))),
+                Text(subtitle, style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildCleanRuleCard(RuleModel rule) {
+    final accent = _getActionAccentColor(rule.action.type);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE2E8F0)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 38,
-            height: 38,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFFE3F7F5),
-              borderRadius: BorderRadius.circular(8),
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(_getActionIcon(rule.action.type), color: const Color(0xFF00A2A5), size: 20),
+            child: Icon(_getActionIcon(rule.action.type), color: accent, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(rule.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
-                const SizedBox(height: 2),
-                Text('When I ${rule.trigger.type.displayName.toLowerCase()} within ${rule.radius.toInt()} m of ${rule.location.name} → ${_formatActionHuman(rule.action)}',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Row(
+                  children: [
+                    Text(
+                      rule.name,
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A)),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: rule.isActive ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        rule.isActive ? 'Active' : 'Paused',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: rule.isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  'When I ${rule.trigger.type.displayName.toLowerCase()} within ${rule.radius.toInt()} m of ${rule.location.name} → ${_formatActionHuman(rule.action)}',
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                ),
               ],
             ),
           ),
+          const SizedBox(width: 10),
           Transform.scale(
-            scale: 0.75,
+            scale: 0.8,
             child: Switch(
               value: rule.isActive,
               activeTrackColor: const Color(0xFF00A2A5),
@@ -1605,9 +1915,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         children: [
           const Icon(Icons.add_location_alt_outlined, size: 40, color: Color(0xFF00A2A5)),
           const SizedBox(height: 12),
-          const Text('No automations created yet', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+          const Text('No automations found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
           const SizedBox(height: 4),
-          const Text('Create your first automation to take action when you arrive, leave, or approach a place.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          const Text('Create an automation to take action when you arrive, leave, or approach a place.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _openCreateWizard,

@@ -12,15 +12,15 @@ extension ActionTypeExtension on ActionType {
   String get displayName {
     switch (this) {
       case ActionType.alarm:
-        return 'Location Alarm';
+        return 'Alarm';
       case ActionType.soundProfile:
-        return 'Sound Profile';
+        return 'Sound mode';
       case ActionType.wifi:
-        return 'WiFi Action';
+        return 'Wi-Fi';
       case ActionType.bluetooth:
-        return 'Bluetooth Action';
+        return 'Bluetooth';
       case ActionType.reminder:
-        return 'Reminder Notification';
+        return 'Reminder';
     }
   }
 

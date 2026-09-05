@@ -252,15 +252,25 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
                   children: List.generate(5, (index) {
                     final isCurrent = index == _currentStep;
                     final isCompleted = index < _currentStep;
-                    return Text(
-                      '${index + 1}. ${_stepNames[index]}',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isCurrent ? FontWeight.w800 : (isCompleted ? FontWeight.w700 : FontWeight.w500),
-                        color: isCurrent
-                            ? const Color(0xFF00A2A5)
-                            : (isCompleted ? const Color(0xFF0F172A) : const Color(0xFF94A3B8)),
-                      ),
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isCompleted)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 3.0),
+                            child: Icon(Icons.check_circle_rounded, size: 13, color: Color(0xFF00A2A5)),
+                          ),
+                        Text(
+                          '${index + 1}. ${_stepNames[index]}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isCurrent ? FontWeight.w800 : (isCompleted ? FontWeight.w700 : FontWeight.w500),
+                            color: isCurrent
+                                ? const Color(0xFF00A2A5)
+                                : (isCompleted ? const Color(0xFF0F172A) : const Color(0xFF94A3B8)),
+                          ),
+                        ),
+                      ],
                     );
                   }),
                 ),
@@ -522,12 +532,12 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
     );
   }
 
-  // STEP 2: Radius Selection (Priority 1 #8, #9, #14, #15)
+  // STEP 2: Radius Selection (Priority 1 #8, #9, #14, #15, #15 Map in Radius)
   Widget _buildStep2Radius() {
     final Map<double, Map<String, String>> radiusInfo = {
       30.0: {'tag': 'Very precise', 'desc': 'Good for nearby entrances'},
       50.0: {'tag': 'Precise', 'desc': 'Good for buildings'},
-      100.0: {'tag': 'Recommended', 'desc': 'Good for most places'},
+      100.0: {'tag': 'Good starting point', 'desc': 'Suitable for most places'},
       250.0: {'tag': 'Area-wide', 'desc': 'Good for campuses'},
       500.0: {'tag': 'Neighborhood', 'desc': 'Good for large areas'},
       1000.0: {'tag': 'Wide area', 'desc': 'Good for districts'},
@@ -561,7 +571,26 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
             'GeoBuzz will trigger your automation when you enter or leave this area.',
             style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 14),
+
+          // LIVE INTERACTIVE RADIUS MAP PREVIEW (Audit Item #15)
+          Container(
+            height: 180,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE2E8F0)),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: LocationPickerMap(
+              initialPosition: _selectedLatLng,
+              radiusMeters: _radiusMeters,
+              onLocationChanged: (pos, addr) {
+                _selectedLatLng = pos;
+                _address = addr;
+              },
+            ),
+          ),
+          const SizedBox(height: 14),
 
           // Radius Selection Grid Cards with Real-life Context (Priority 1 #14)
           Column(
@@ -881,7 +910,7 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
     );
   }
 
-  // STEP 4: Action Selection & Configuration (Priority 1 #19)
+  // STEP 4: Action Selection & Configuration (Audit #17, #18, #19, #20)
   Widget _buildStep4Action() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
@@ -913,37 +942,134 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
           ),
           const SizedBox(height: 16),
 
-          // Action Type Selector Chips with Semantic Accents
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: ActionType.values.map((action) {
-                final isSelected = _selectedAction == action;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: ChoiceChip(
-                    label: Text(action.displayName),
-                    selected: isSelected,
-                    selectedColor: const Color(0xFF00A2A5),
-                    backgroundColor: Colors.white,
-                    side: BorderSide(
-                      color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFCBD5E1),
+          // 2-Column Action Selection Grid (Audit Item #17)
+          Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildActionGridCard(
+                      type: ActionType.alarm,
+                      title: 'Alarm',
+                      subtitle: 'Ring phone',
+                      icon: Icons.alarm_rounded,
+                      accentColor: const Color(0xFFF59E0B),
                     ),
-                    labelStyle: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFF1E293B),
-                      fontWeight: FontWeight.w700,
-                    ),
-                    onSelected: (_) => setState(() => _selectedAction = action),
                   ),
-                );
-              }).toList(),
-            ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildActionGridCard(
+                      type: ActionType.soundProfile,
+                      title: 'Sound mode',
+                      subtitle: 'Silent / Vibrate',
+                      icon: Icons.volume_off_rounded,
+                      accentColor: const Color(0xFF8B5CF6),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildActionGridCard(
+                      type: ActionType.wifi,
+                      title: 'Wi-Fi',
+                      subtitle: 'Network toggle',
+                      icon: Icons.wifi_rounded,
+                      accentColor: const Color(0xFF3B82F6),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _buildActionGridCard(
+                      type: ActionType.bluetooth,
+                      title: 'Bluetooth',
+                      subtitle: 'Device toggle',
+                      icon: Icons.bluetooth_rounded,
+                      accentColor: const Color(0xFF0284C7),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              _buildActionGridCard(
+                type: ActionType.reminder,
+                title: 'Reminder',
+                subtitle: 'Personal notification with custom note details',
+                icon: Icons.notifications_active_rounded,
+                accentColor: const Color(0xFF10B981),
+                isFullWidth: true,
+              ),
+            ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
 
           // Action Configuration Details
           _buildActionConfigPanel(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionGridCard({
+    required ActionType type,
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color accentColor,
+    bool isFullWidth = false,
+  }) {
+    final isSelected = _selectedAction == type;
+    return InkWell(
+      onTap: () => setState(() => _selectedAction = type),
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE3F7F5) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFE2E8F0),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF00A2A5) : accentColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: isSelected ? Colors.white : accentColor, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: isSelected ? const Color(0xFF007A7C) : const Color(0xFF0F172A),
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            if (isSelected)
+              const Icon(Icons.check_circle_rounded, color: Color(0xFF00A2A5), size: 18),
+          ],
+        ),
       ),
     );
   }
@@ -1003,6 +1129,7 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
         );
 
       case ActionType.alarm:
+        final List<int> alarmPresets = [5, 10, 15, 30, 60];
         return Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
@@ -1013,27 +1140,50 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Alarm Duration: $_alarmDurationSeconds seconds',
-                  style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 14)),
-              SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: const Color(0xFF00A2A5),
-                  inactiveTrackColor: const Color(0xFFE2E8F0),
-                  thumbColor: const Color(0xFF00A2A5),
-                ),
-                child: Slider(
-                  value: _alarmDurationSeconds.toDouble(),
-                  min: 5,
-                  max: 60,
-                  divisions: 11,
-                  label: '$_alarmDurationSeconds sec',
-                  onChanged: (val) => setState(() => _alarmDurationSeconds = val.toInt()),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Alarm duration',
+                      style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF0F172A), fontSize: 14)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE3F7F5),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Text('$_alarmDurationSeconds sec',
+                        style: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF007A7C), fontSize: 12)),
+                  ),
+                ],
               ),
+              const SizedBox(height: 10),
+              // Discrete Alarm Duration Presets (Audit Item #20)
+              Wrap(
+                spacing: 8,
+                children: alarmPresets.map((sec) {
+                  final isSelected = _alarmDurationSeconds == sec;
+                  return ChoiceChip(
+                    label: Text('$sec sec'),
+                    selected: isSelected,
+                    selectedColor: const Color(0xFF00A2A5),
+                    backgroundColor: Colors.white,
+                    side: BorderSide(color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFCBD5E1)),
+                    labelStyle: TextStyle(
+                      color: isSelected ? Colors.white : const Color(0xFF1E293B),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 12,
+                    ),
+                    onSelected: (_) => setState(() => _alarmDurationSeconds = sec),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 14),
               SwitchListTile(
-                title: const Text('Vibrate phone pattern', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w600)),
+                title: const Text('Vibrate when the alarm rings', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w600, fontSize: 13.5)),
+                subtitle: const Text('Vibration pattern triggers with sound', style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5)),
                 value: _alarmVibrate,
-                activeColor: const Color(0xFF00A2A5),
+                activeTrackColor: const Color(0xFF00A2A5),
+                activeThumbColor: Colors.white,
                 onChanged: (val) => setState(() => _alarmVibrate = val),
               ),
             ],
@@ -1075,10 +1225,11 @@ class _RuleWizardScreenState extends State<RuleWizardScreen> {
               ),
               const SizedBox(height: 12),
               SwitchListTile(
-                title: const Text('One-time trigger', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w600)),
-                subtitle: const Text('Disable automation automatically once triggered', style: TextStyle(color: Color(0xFF64748B), fontSize: 12)),
+                title: const Text('One-time trigger', style: TextStyle(color: Color(0xFF0F172A), fontWeight: FontWeight.w600, fontSize: 13.5)),
+                subtitle: const Text('Disable automation automatically once triggered', style: TextStyle(color: Color(0xFF64748B), fontSize: 11.5)),
                 value: _isOneTimeReminder,
-                activeColor: const Color(0xFF00A2A5),
+                activeTrackColor: const Color(0xFF00A2A5),
+                activeThumbColor: Colors.white,
                 onChanged: (val) => setState(() => _isOneTimeReminder = val),
               ),
             ],

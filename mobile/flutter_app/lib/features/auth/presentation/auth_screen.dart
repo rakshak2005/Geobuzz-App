@@ -145,24 +145,55 @@ class _AuthScreenState extends State<AuthScreen> {
                     ],
                   ),
 
-                  // Top-right Privacy Tag
-                  Row(
-                    children: const [
-                      Icon(
-                        Icons.shield_outlined,
-                        size: 13,
-                        color: Color(0xFF00A2A5),
-                      ),
-                      SizedBox(width: 4),
-                      Text(
-                        'Private by design',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF64748B),
+                  // Top-right Privacy Tag (Clickable dialog modal, Audit #29)
+                  InkWell(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: Row(
+                            children: const [
+                              Icon(Icons.shield_rounded, color: Color(0xFF00A2A5), size: 22),
+                              SizedBox(width: 8),
+                              Text('Private by Design', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                            ],
+                          ),
+                          content: const Text(
+                            'GeoBuzz processes geofences and automations entirely on your local device. Your precise location history is never sold, tracked, or shared with third parties.',
+                            style: TextStyle(fontSize: 13, color: Color(0xFF475569), height: 1.4),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(ctx).pop(),
+                              child: const Text('Got it', style: TextStyle(color: Color(0xFF00A2A5), fontWeight: FontWeight.bold)),
+                            ),
+                          ],
                         ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.shield_outlined,
+                            size: 13,
+                            color: Color(0xFF00A2A5),
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Private by design →',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF00A2A5),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -572,7 +603,7 @@ class _AuthScreenState extends State<AuthScreen> {
               ),
               const SizedBox(height: 4),
               const Text(
-                '© 2026 GeoBuzz · Privacy · Terms',
+                '© 2026 GeoBuzz · Privacy · Terms · Help',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 11,
