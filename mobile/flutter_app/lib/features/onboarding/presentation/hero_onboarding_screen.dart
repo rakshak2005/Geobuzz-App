@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -6,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:video_player/video_player.dart';
 
 import '../../../shared/widgets/geobuzz_brand_logo.dart';
+import '../../../shared/widgets/hero_video_background.dart';
 import '../../auth/domain/auth_provider.dart';
 import '../../auth/presentation/auth_screen.dart';
 import '../../home/presentation/responsive_scaffold.dart';
@@ -201,7 +200,7 @@ class _HeroOnboardingScreenState extends State<HeroOnboardingScreen>
           body: Stack(
             children: [
               RepaintBoundary(
-                child: _HeroVideoBackground(reducedMotion: _reducedMotion),
+                child: HeroVideoBackground(reducedMotion: _reducedMotion),
               ),
               Positioned.fill(
                 child: Container(
@@ -658,166 +657,6 @@ class _HeroOnboardingScreenState extends State<HeroOnboardingScreen>
           ),
         ),
       ),
-    );
-  }
-}
-
-class _HeroVideoBackground extends StatefulWidget {
-  const _HeroVideoBackground({required this.reducedMotion});
-
-  final bool reducedMotion;
-
-  @override
-  State<_HeroVideoBackground> createState() => _HeroVideoBackgroundState();
-}
-
-class _HeroVideoBackgroundState extends State<_HeroVideoBackground> {
-  static const String _videoUrl =
-      'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260912_104036_bd6924f6-3c8e-417e-8465-6d03c8c2e9e6.mp4';
-  static const String _posterUrl =
-      'https://d2ol7oe51mr4n9.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/82e7eb75-c65f-490a-99b5-f3d1cad54200.webp';
-
-  VideoPlayerController? _controller;
-  bool _initialized = false;
-  bool _failed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    unawaited(_initializeVideo());
-  }
-
-  @override
-  void didUpdateWidget(covariant _HeroVideoBackground oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.reducedMotion != widget.reducedMotion) {
-      _applyReducedMotion();
-    }
-  }
-
-  Future<void> _initializeVideo() async {
-    final options = VideoPlayerOptions(
-      mixWithOthers: true,
-      allowBackgroundPlayback: false,
-      preventsDisplaySleepDuringVideoPlayback: false,
-      webOptions: VideoPlayerWebOptions(
-        controls: const VideoPlayerWebOptionsControls.disabled(),
-        allowContextMenu: false,
-        allowRemotePlayback: false,
-        poster: Uri.parse(_posterUrl),
-      ),
-    );
-    final controller = VideoPlayerController.networkUrl(
-      Uri.parse(_videoUrl),
-      videoPlayerOptions: options,
-    );
-    _controller = controller;
-
-    try {
-      await controller.initialize();
-      await controller.setVolume(0);
-      await controller.setLooping(true);
-      if (!mounted) return;
-      setState(() => _initialized = true);
-      await _applyReducedMotion();
-    } catch (_) {
-      if (!mounted) return;
-      setState(() {
-        _initialized = true;
-        _failed = true;
-      });
-    }
-  }
-
-  Future<void> _applyReducedMotion() async {
-    final controller = _controller;
-    if (controller == null || !mounted) return;
-    try {
-      if (widget.reducedMotion) {
-        await controller.pause();
-        await controller.seekTo(Duration.zero);
-      } else if (_initialized && !_failed) {
-        await controller.play();
-      }
-    } catch (_) {}
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(color: Colors.black),
-        // Poster is always in the tree so there is no black flash while
-        // the video buffers. It is covered once the first frame renders.
-        Positioned.fill(
-          child: Image.network(
-            _posterUrl,
-            fit: BoxFit.cover,
-            alignment: const Alignment(0.51, -0.84),
-            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-          ),
-        ),
-        if (_initialized && !_failed && _controller != null)
-          _CoveredVideo(controller: _controller!),
-      ],
-    );
-  }
-
-  @override
-  void dispose() {
-    final controller = _controller;
-    _controller = null;
-    if (controller != null) {
-      unawaited(_disposeController(controller));
-    }
-    super.dispose();
-  }
-
-  Future<void> _disposeController(VideoPlayerController controller) async {
-    try {
-      await controller.pause();
-    } catch (_) {}
-    await controller.dispose();
-  }
-}
-
-class _CoveredVideo extends StatelessWidget {
-  const _CoveredVideo({required this.controller});
-
-  final VideoPlayerController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        if (constraints.maxWidth <= 0 || constraints.maxHeight <= 0) {
-          return const SizedBox.shrink();
-        }
-        const videoRatio = 16.0 / 9.0;
-        final containerRatio = constraints.maxWidth / constraints.maxHeight;
-        final scale = _max(
-          containerRatio / videoRatio,
-          videoRatio / containerRatio,
-        );
-        return ClipRect(
-          child: Align(
-            alignment: const Alignment(0.02, -0.84),
-            child: Transform.scale(
-              // Transform alone would repaint the video every frame.
-              // RepaintBoundary isolates it from the text/buttons above.
-              scale: scale,
-              child: RepaintBoundary(
-                child: SizedBox(
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                  child: VideoPlayer(controller),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
     );
   }
 }
