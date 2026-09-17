@@ -170,64 +170,66 @@ class _LocationPickerMapState extends State<LocationPickerMap> {
     return Stack(
       children: [
         // OpenStreetMap Vector & Raster Tiles
-        FlutterMap(
-          mapController: _mapController,
-          options: MapOptions(
-            initialCenter: _selectedPosition,
-            initialZoom: 15.0,
-            onTap: (tapPosition, point) {
-              setState(() {
-                _selectedPosition = point;
-              });
-              _reverseGeocode(point);
-            },
-          ),
-          children: [
-            TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.geobuzz.geobuzz',
+        ExcludeSemantics(
+          child: FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _selectedPosition,
+              initialZoom: 15.0,
+              onTap: (tapPosition, point) {
+                setState(() {
+                  _selectedPosition = point;
+                });
+                _reverseGeocode(point);
+              },
             ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.geobuzz.geobuzz',
+              ),
 
-            // Geofence Circle Preview
-            CircleLayer(
-              circles: [
-                CircleMarker(
-                  point: _selectedPosition,
-                  radius: widget.radiusMeters,
-                  useRadiusInMeter: true,
-                  color: const Color(0xFF00A2A5).withValues(alpha: 0.18),
-                  borderColor: const Color(0xFF00A2A5),
-                  borderStrokeWidth: 2,
-                ),
-              ],
-            ),
-
-            // Anchor Target Location Marker
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _selectedPosition,
-                  width: 42,
-                  height: 42,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00A2A5),
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF00A2A5).withValues(alpha: 0.5),
-                          blurRadius: 10,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: const Icon(Icons.place_rounded, color: Colors.white, size: 22),
+              // Geofence Circle Preview
+              CircleLayer(
+                circles: [
+                  CircleMarker(
+                    point: _selectedPosition,
+                    radius: widget.radiusMeters,
+                    useRadiusInMeter: true,
+                    color: const Color(0xFF00A2A5).withValues(alpha: 0.18),
+                    borderColor: const Color(0xFF00A2A5),
+                    borderStrokeWidth: 2,
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+
+              // Anchor Target Location Marker
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: _selectedPosition,
+                    width: 42,
+                    height: 42,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00A2A5),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 3),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF00A2A5).withValues(alpha: 0.5),
+                            blurRadius: 10,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Icon(Icons.place_rounded, color: Colors.white, size: 22),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
 
         // Search Bar Overlay (Clean light rounded style)

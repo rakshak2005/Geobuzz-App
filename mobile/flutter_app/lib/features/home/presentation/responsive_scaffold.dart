@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -28,7 +29,8 @@ class ResponsiveScaffold extends StatefulWidget {
 }
 
 class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
-  int _selectedIndex = 0; // 0: Overview, 1: Automations, 2: Map canvas, 3: Activity stream, 4: Settings
+  int _selectedIndex =
+      0; // 0: Overview, 1: Automations, 2: Map canvas, 3: Activity stream, 4: Settings
   final TextEditingController _searchController = TextEditingController();
   bool _gpsStreamLive = true;
 
@@ -69,8 +71,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   Widget build(BuildContext context) {
     return CallbackShortcuts(
       bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyK, control: true): _openCommandPalette,
-        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): _openCommandPalette,
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true):
+            _openCommandPalette,
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+            _openCommandPalette,
       },
       child: Focus(
         autofocus: true,
@@ -91,286 +95,472 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   // ==========================================
   // DESKTOP PIXEL-PERFECT STITCH LAYOUT
   // ==========================================
+  // ==========================================
+  // DESKTOP PIXEL-PERFECT STITCH LAYOUT
+  // ==========================================
   Widget _buildDesktopLayout() {
     final authProvider = context.watch<AuthProvider>();
     final ruleProvider = context.watch<RuleProvider>();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F6F8), // Neutral light background canvas
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: const Color(0xFFEDF3F7),
+      body: Stack(
         children: [
-          // ------------------------------------
-          // LEFT SIDEBAR (Width: 230)
-          // ------------------------------------
-          Container(
-            width: 230,
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                right: BorderSide(color: Color(0xFFE5EBEF), width: 1),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Logo Header (Official GeoBuzz Branding)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/logo.png',
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(width: 10),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          RichText(
-                            text: const TextSpan(
-                              children: [
-                                TextSpan(
-                                  text: 'Geo',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF1E293B),
-                                    letterSpacing: -0.6,
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: 'Buzz',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF00A2A5),
-                                    letterSpacing: -0.6,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            'AUTOMATE BY LOCATION',
-                            style: TextStyle(
-                              fontSize: 7.5,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.2,
-                              color: Color(0xFF64748B),
-                            ),
-                          ),
+          // 1. Dynamic Luminous Atmospheric Aura Mesh Background
+          _buildAtmosphericBackground(),
+
+          // 2. Foreground Layout
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // ------------------------------------
+              // LEFT SIDEBAR (Frosted Translucent Glass)
+              // ------------------------------------
+              ClipRect(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                  child: Container(
+                    width: 230,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withValues(alpha: 0.90),
+                          Colors.white.withValues(alpha: 0.78),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-
-                // 2. WORKSPACE SECTION
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: Text(
-                    'WORKSPACE',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _buildSidebarNavButton(0, 'Home', Icons.grid_view_rounded),
-                _buildSidebarNavButton(1, 'Automations', Icons.bolt_rounded),
-                _buildSidebarNavButton(2, 'Map', Icons.map_outlined),
-                _buildSidebarNavButton(3, 'Activity', Icons.show_chart_rounded),
-
-                const SizedBox(height: 28),
-
-                // 3. SYSTEM SECTION
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: Text(
-                    'SYSTEM',
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      color: Color(0xFF64748B),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                _buildSidebarNavButton(4, 'Settings', Icons.settings_outlined),
-
-                const Spacer(),
-
-                // 4. GPS Status Switch Card
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFF00A2A5), width: 1.2),
+                      border: Border(
+                        right: BorderSide(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          width: 1.5,
+                        ),
+                      ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00A2A5).withValues(alpha: 0.08),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(4, 0),
                         ),
                       ],
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: _gpsStreamLive ? const Color(0xFF00A2A5) : const Color(0xFF94A3B8),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
+                        // 1. Logo Header (Official GeoBuzz Branding)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                          child: Row(
                             children: [
-                              Text(
-                                _gpsStreamLive ? 'GPS active' : 'GPS paused',
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF0F172A),
-                                ),
+                              Image.asset(
+                                'assets/images/logo.png',
+                                width: 44,
+                                height: 44,
+                                fit: BoxFit.contain,
                               ),
-                              const SizedBox(height: 1),
-                              const Text(
-                                '±8m accuracy',
-                                style: TextStyle(
-                                  fontSize: 10.5,
-                                  fontWeight: FontWeight.w500,
-                                  color: Color(0xFF64748B),
-                                ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  RichText(
+                                    text: const TextSpan(
+                                      children: [
+                                        TextSpan(
+                                          text: 'Geo',
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF1E293B),
+                                            letterSpacing: -0.6,
+                                          ),
+                                        ),
+                                        TextSpan(
+                                          text: 'Buzz',
+                                          style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                            color: Color(0xFF00A2A5),
+                                            letterSpacing: -0.6,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  const Text(
+                                    'AUTOMATE BY LOCATION',
+                                    style: TextStyle(
+                                      fontSize: 7.5,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1.2,
+                                      color: Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),
                         ),
-                        Transform.scale(
-                          scale: 0.75,
-                          child: Switch(
-                            value: _gpsStreamLive,
-                            activeTrackColor: const Color(0xFF00A2A5),
-                            activeThumbColor: Colors.white,
-                            inactiveThumbColor: Colors.white,
-                            inactiveTrackColor: const Color(0xFFCBD5E1),
-                            trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-                            onChanged: (val) {
-                              setState(() => _gpsStreamLive = val);
-                              if (val) {
-                                RuleEngine.instance.initialize();
-                              } else {
-                                LocationService.instance.stopPositionStream();
-                              }
-                            },
+
+                        // 2. WORKSPACE SECTION
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                          child: Text(
+                            'WORKSPACE',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        _buildSidebarNavButton(0, 'Home', Icons.grid_view_rounded),
+                        _buildSidebarNavButton(1, 'Automations', Icons.bolt_rounded),
+                        _buildSidebarNavButton(2, 'Map', Icons.map_outlined),
+                        _buildSidebarNavButton(3, 'Activity', Icons.show_chart_rounded),
+
+                        const SizedBox(height: 28),
+
+                        // 3. SYSTEM SECTION
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                          child: Text(
+                            'SYSTEM',
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 1.2,
+                              color: Color(0xFF64748B),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        _buildSidebarNavButton(4, 'Settings', Icons.settings_outlined),
+
+                        const Spacer(),
+
+                        // 4. GPS Status Switch Card (Glassmorphic)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white.withValues(alpha: 0.92),
+                                      Colors.white.withValues(alpha: 0.70),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: Colors.white, width: 1.5),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: const Color(0xFF00A2A5).withValues(alpha: 0.10),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 8,
+                                      height: 8,
+                                      decoration: BoxDecoration(
+                                        color: _gpsStreamLive
+                                            ? const Color(0xFF00A2A5)
+                                            : const Color(0xFF94A3B8),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            _gpsStreamLive ? 'GPS active' : 'GPS paused',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w700,
+                                              color: Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 1),
+                                          const Text(
+                                            '±8m accuracy',
+                                            style: TextStyle(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w500,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 28,
+                                      width: 44,
+                                      child: FittedBox(
+                                        fit: BoxFit.contain,
+                                        child: Switch(
+                                          value: _gpsStreamLive,
+                                          activeTrackColor: const Color(0xFF00A2A5),
+                                          activeThumbColor: Colors.white,
+                                          inactiveThumbColor: Colors.white,
+                                          inactiveTrackColor: const Color(0xFFCBD5E1),
+                                          trackOutlineColor:
+                                              WidgetStateProperty.all(Colors.transparent),
+                                          onChanged: (val) {
+                                            setState(() => _gpsStreamLive = val);
+                                            if (val) {
+                                              RuleEngine.instance.initialize();
+                                            } else {
+                                              LocationService.instance.stopPositionStream();
+                                            }
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // 5. User Profile Bar
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 36,
+                                height: 36,
+                                decoration: BoxDecoration(
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFE2E8F0), Color(0xFFCBD5E1)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    (authProvider.userName ?? 'R')
+                                        .substring(0, 1)
+                                        .toUpperCase(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF1E293B),
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      authProvider.userName ?? 'Rakshak',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    const Text(
+                                      'Online',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.logout_rounded,
+                                    color: Color(0xFF94A3B8), size: 19),
+                                tooltip: 'Logout',
+                                onPressed: () {
+                                  authProvider.logout();
+                                  Navigator.of(context).pushReplacement(
+                                    MaterialPageRoute(builder: (_) => const AuthScreen()),
+                                  );
+                                },
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 16),
-
-                // 5. User Profile Bar
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Center(
-                          child: Text(
-                            (authProvider.userName ?? 'R').substring(0, 1).toUpperCase(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF1E293B),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              authProvider.userName ?? 'Rakshak',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF0F172A),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const Text(
-                              'Online',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.logout_rounded, color: Color(0xFF94A3B8), size: 19),
-                        tooltip: 'Logout',
-                        onPressed: () {
-                          authProvider.logout();
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => const AuthScreen()),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
+              // ------------------------------------
+              // MAIN CONTENT AREA
+              // ------------------------------------
+              Expanded(
+                child: Column(
+                  children: [
+                    // Top Search & Status Action Bar (Frosted Glass)
+                    _buildDesktopTopBar(),
+                    const AlarmBanner(),
+                    Expanded(
+                      child: _selectedIndex == 0
+                          ? _buildSpatialOperatingCenterView(ruleProvider)
+                          : _buildSecondaryTabView(),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-
-          // ------------------------------------
-          // MAIN CONTENT AREA
-          // ------------------------------------
-          Expanded(
-            child: Column(
-              children: [
-                // Top Search & Status Action Bar
-                _buildDesktopTopBar(),
-                const AlarmBanner(),
-                Expanded(
-                  child: _selectedIndex == 0
-                      ? _buildSpatialOperatingCenterView(ruleProvider)
-                      : _buildSecondaryTabView(),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  // ==========================================
+  // ATMOSPHERIC MESH GRADIENT BACKDROP
+  // ==========================================
+  Widget _buildAtmosphericBackground() {
+    return Positioned.fill(
+      child: IgnorePointer(
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFFE2EDF4),
+                Color(0xFFDCE8F0),
+                Color(0xFFE8EFF5),
+                Color(0xFFDFEAF2),
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              // Top-Right Vibrant Cyan / Teal Aura Orb
+              Positioned(
+                top: -100,
+                right: -60,
+                child: Container(
+                  width: 650,
+                  height: 650,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF00C7C9).withValues(alpha: 0.45),
+                        const Color(0xFF00A2A5).withValues(alpha: 0.28),
+                        const Color(0xFF06B6D4).withValues(alpha: 0.12),
+                        const Color(0xFF00A2A5).withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.35, 0.65, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Center-Left Electric Indigo / Lavender Aura Orb
+              Positioned(
+                top: 160,
+                left: -120,
+                child: Container(
+                  width: 580,
+                  height: 580,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF6366F1).withValues(alpha: 0.38),
+                        const Color(0xFF8B5CF6).withValues(alpha: 0.22),
+                        const Color(0xFF818CF8).withValues(alpha: 0.08),
+                        const Color(0xFF6366F1).withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.35, 0.65, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Center-Right Warm Sunset Amber Aura Orb
+              Positioned(
+                top: 320,
+                right: 180,
+                child: Container(
+                  width: 440,
+                  height: 440,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFFF59E0B).withValues(alpha: 0.28),
+                        const Color(0xFFFB923C).withValues(alpha: 0.14),
+                        const Color(0xFFF59E0B).withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Bottom-Left Mint / Emerald Radiance Orb
+              Positioned(
+                bottom: -80,
+                left: 100,
+                child: Container(
+                  width: 560,
+                  height: 560,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF10B981).withValues(alpha: 0.38),
+                        const Color(0xFF34D399).withValues(alpha: 0.18),
+                        const Color(0xFF10B981).withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.4, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+              // Bottom-Right Deep Azure Orb
+              Positioned(
+                bottom: -100,
+                right: -80,
+                child: Container(
+                  width: 500,
+                  height: 500,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        const Color(0xFF0284C7).withValues(alpha: 0.32),
+                        const Color(0xFF38BDF8).withValues(alpha: 0.14),
+                        const Color(0xFF0284C7).withValues(alpha: 0.0),
+                      ],
+                      stops: const [0.0, 0.45, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -394,7 +584,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 Icon(
                   icon,
                   size: 19,
-                  color: isSelected ? const Color(0xFF007A7C) : const Color(0xFF64748B),
+                  color: isSelected
+                      ? const Color(0xFF007A7C)
+                      : const Color(0xFF64748B),
                 ),
                 const SizedBox(width: 12),
                 Text(
@@ -402,7 +594,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   style: TextStyle(
                     fontSize: 13.5,
                     fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? const Color(0xFF007A7C) : const Color(0xFF475569),
+                    color: isSelected
+                        ? const Color(0xFF007A7C)
+                        : const Color(0xFF475569),
                   ),
                 ),
               ],
@@ -414,7 +608,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ------------------------------------
-  // TOP BAR (Search + GPS Pill + New Automation)
+  // TOP BAR (Search + GPS Pill + New Automation) (Frosted Glass)
   // ------------------------------------
   Widget _buildDesktopTopBar() {
     return Container(
@@ -422,89 +616,127 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       color: Colors.transparent,
       child: Row(
         children: [
-          // Search Bar with ⌘ K
-          InkWell(
-            onTap: _openCommandPalette,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 360, minWidth: 200),
-              height: 42,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: const Color(0xFFEBF0F3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFDEE5EA)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 18),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Text(
-                      'Search places, automations, activity...',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF64748B),
-                        fontWeight: FontWeight.w400,
+          // Search Bar with ⌘ K (Frosted Glass)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: InkWell(
+                onTap: _openCommandPalette,
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 380, minWidth: 220),
+                  height: 44,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: 0.85),
+                        Colors.white.withValues(alpha: 0.55),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white, width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                    ),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xFFCBD5E1)),
-                    ),
-                    child: const Text(
-                      '⌘ K',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF64748B),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.search_rounded,
+                          color: Color(0xFF64748B), size: 18),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Search places, automations, activity...',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xFF64748B),
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                       ),
-                    ),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.8),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: const Color(0xFFCBD5E1), width: 1),
+                        ),
+                        child: const Text(
+                          '⌘ K',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
             ),
           ),
           const Spacer(),
 
-          // GPS Telemetry Pill
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEBF5F1),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFD1EBE1)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF10B981),
-                    shape: BoxShape.circle,
+          // GPS Telemetry Pill (Frosted Glass)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFEBF5F1).withValues(alpha: 0.90),
+                      const Color(0xFFEBF5F1).withValues(alpha: 0.65),
+                    ],
                   ),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF00A2A5).withValues(alpha: 0.08),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                const Text(
-                  'GPS active · ±8m',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E293B),
-                  ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF10B981),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'GPS active · ±8m',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(width: 14),
 
-          // + New Automation Button (Teal filled)
+          // + New Automation Button (Teal Gradient with glow)
           ElevatedButton.icon(
             onPressed: _openCreateWizard,
             icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
@@ -519,9 +751,11 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF00A2A5),
               foregroundColor: Colors.white,
-              elevation: 0,
+              elevation: 4,
+              shadowColor: const Color(0xFF00A2A5).withValues(alpha: 0.35),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
             ),
           ),
         ],
@@ -552,170 +786,315 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
     final String activeKpiFooter = activeCount == 0
         ? 'No automations running'
-        : (activeCount == 1 ? '1 running normally' : 'All $activeCount running normally');
+        : (activeCount == 1
+            ? '1 running normally'
+            : 'All $activeCount running normally');
 
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 650;
-        final isTablet = constraints.maxWidth >= 650 && constraints.maxWidth < 1050;
+        final isTablet =
+            constraints.maxWidth >= 650 && constraints.maxWidth < 1050;
         final contentPadding = isMobile
             ? const EdgeInsets.fromLTRB(16, 12, 16, 24)
             : const EdgeInsets.fromLTRB(28, 0, 28, 28);
 
-        return SingleChildScrollView(
-          padding: contentPadding,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header Row
-              if (isMobile)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'HELLO, ${userName.toUpperCase()}',
-                          style: const TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: Color(0xFF00A2A5),
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.calendar_today_outlined, size: 13, color: Color(0xFF00A2A5)),
-                              const SizedBox(width: 6),
-                              Text(
-                                todayStr,
-                                style: const TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: Color(0xFF1E293B),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Your day, automated.',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      statusMessage,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: activeCount > 0 ? const Color(0xFF00A2A5) : const Color(0xFF64748B),
-                        fontWeight: activeCount > 0 ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+        return Stack(
+          children: [
+            // Ambient Atmospheric Glass Glow Orbs
+            Positioned(
+              top: -60,
+              right: -40,
+              child: Container(
+                width: 260,
+                height: 260,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF00A2A5).withValues(alpha: 0.18),
+                      const Color(0xFF00A2A5).withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 280,
+              left: -80,
+              child: Container(
+                width: 280,
+                height: 280,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF6366F1).withValues(alpha: 0.10),
+                      const Color(0xFF6366F1).withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              bottom: 40,
+              right: -50,
+              child: Container(
+                width: 240,
+                height: 240,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      const Color(0xFF10B981).withValues(alpha: 0.12),
+                      const Color(0xFF10B981).withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Main Content ScrollView
+            SingleChildScrollView(
+              padding: contentPadding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header Row
+                  if (isMobile)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'HELLO, ${userName.toUpperCase()}',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1.2,
-                            color: Color(0xFF00A2A5),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'HELLO, ${userName.toUpperCase()}',
+                              style: const TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                color: Color(0xFF00A2A5),
+                              ),
+                            ),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: BackdropFilter(
+                                filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.white.withValues(alpha: 0.85),
+                                        Colors.white.withValues(alpha: 0.65),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                        color: Colors.white.withValues(alpha: 0.9),
+                                        width: 1.2),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.calendar_today_outlined,
+                                          size: 13, color: Color(0xFF00A2A5)),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        todayStr,
+                                        style: const TextStyle(
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF1E293B),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           'Your day, automated.',
                           style: TextStyle(
-                            fontSize: 26,
+                            fontSize: 22,
                             fontWeight: FontWeight.w800,
                             color: Color(0xFF0F172A),
                             letterSpacing: -0.5,
                           ),
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 3),
                         Text(
                           statusMessage,
                           style: TextStyle(
-                            fontSize: 13.5,
-                            color: activeCount > 0 ? const Color(0xFF00A2A5) : const Color(0xFF64748B),
-                            fontWeight: activeCount > 0 ? FontWeight.w600 : FontWeight.w500,
+                            fontSize: 12.5,
+                            color: activeCount > 0
+                                ? const Color(0xFF00A2A5)
+                                : const Color(0xFF64748B),
+                            fontWeight:
+                                activeCount > 0 ? FontWeight.w600 : FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'HELLO, ${userName.toUpperCase()}',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                color: Color(0xFF00A2A5),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'Your day, automated.',
+                              style: TextStyle(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF0F172A),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              statusMessage,
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: activeCount > 0
+                                    ? const Color(0xFF00A2A5)
+                                    : const Color(0xFF64748B),
+                                fontWeight: activeCount > 0
+                                    ? FontWeight.w600
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                        // Today, Date Pill
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    Colors.white.withValues(alpha: 0.88),
+                                    Colors.white.withValues(alpha: 0.65),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    width: 1.2),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.calendar_today_outlined,
+                                      size: 15, color: Color(0xFF00A2A5)),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    todayStr,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: Color(0xFF1E293B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    // Today, Date Pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.calendar_today_outlined, size: 15, color: Color(0xFF00A2A5)),
-                          const SizedBox(width: 8),
-                          Text(
-                            todayStr,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF1E293B),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              SizedBox(height: isMobile ? 14 : 20),
+                  SizedBox(height: isMobile ? 14 : 20),
 
-              // ------------------------------------
-              // ROW 1: 3 STAT CARDS (Responsive Wrap/Row) (Audit #5, #6)
-              // ------------------------------------
-              if (isMobile)
-                Column(
-                  children: [
+                  // ------------------------------------
+                  // ROW 1: 3 STAT CARDS (Responsive Wrap/Row)
+                  // ------------------------------------
+                  if (isMobile)
+                    Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _buildTopStatCard(
+                                title: 'ACTIVE AUTOMATIONS',
+                                value: activeCount.toString().padLeft(2, '0'),
+                                footerText: activeKpiFooter,
+                                footerColor: activeCount > 0
+                                    ? const Color(0xFF0D9488)
+                                    : const Color(0xFF94A3B8),
+                                icon: Icons.bolt_rounded,
+                                iconBg: const Color(0xFFE6F7F5),
+                                iconColor: const Color(0xFF00A2A5),
+                                isMobile: true,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildTopStatCard(
+                                title: 'SAVED PLACES',
+                                value: totalCount.toString().padLeft(2, '0'),
+                                footerText: '$totalCount places configured',
+                                footerColor: const Color(0xFF64748B),
+                                icon: Icons.bookmark_border_rounded,
+                                iconBg: const Color(0xFFE6F7F5),
+                                iconColor: const Color(0xFF00A2A5),
+                                isMobile: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        _buildTopStatCard(
+                          title: 'LOCATION STATUS',
+                          value: 'Ready',
+                          footerText: 'GPS active · ±8m',
+                          footerColor: const Color(0xFF0D9488),
+                          icon: Icons.filter_center_focus_rounded,
+                          iconBg: const Color(0xFFE6F7F5),
+                          iconColor: const Color(0xFF00A2A5),
+                          isMobile: true,
+                        ),
+                      ],
+                    )
+                  else
                     Row(
                       children: [
+                        // Card 1: ACTIVE AUTOMATIONS
                         Expanded(
                           child: _buildTopStatCard(
                             title: 'ACTIVE AUTOMATIONS',
                             value: activeCount.toString().padLeft(2, '0'),
                             footerText: activeKpiFooter,
-                            footerColor: activeCount > 0 ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
+                            footerColor: activeCount > 0
+                                ? const Color(0xFF0D9488)
+                                : const Color(0xFF94A3B8),
                             icon: Icons.bolt_rounded,
                             iconBg: const Color(0xFFE6F7F5),
                             iconColor: const Color(0xFF00A2A5),
-                            isMobile: true,
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(width: 16),
+
+                        // Card 2: SAVED PLACES
                         Expanded(
                           child: _buildTopStatCard(
                             title: 'SAVED PLACES',
@@ -725,140 +1104,159 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                             icon: Icons.bookmark_border_rounded,
                             iconBg: const Color(0xFFE6F7F5),
                             iconColor: const Color(0xFF00A2A5),
-                            isMobile: true,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+
+                        // Card 3: LOCATION STATUS
+                        Expanded(
+                          child: _buildTopStatCard(
+                            title: 'LOCATION STATUS',
+                            value: 'Ready',
+                            footerText: 'GPS active · ±8m',
+                            footerColor: const Color(0xFF0D9488),
+                            icon: Icons.filter_center_focus_rounded,
+                            iconBg: const Color(0xFFE6F7F5),
+                            iconColor: const Color(0xFF00A2A5),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    _buildTopStatCard(
-                      title: 'LOCATION STATUS',
-                      value: 'Ready',
-                      footerText: 'GPS active · ±8m',
-                      footerColor: const Color(0xFF0D9488),
-                      icon: Icons.filter_center_focus_rounded,
-                      iconBg: const Color(0xFFE6F7F5),
-                      iconColor: const Color(0xFF00A2A5),
-                      isMobile: true,
-                    ),
-                  ],
-                )
-              else
-                Row(
-                  children: [
-                    // Card 1: ACTIVE AUTOMATIONS
-                    Expanded(
-                      child: _buildTopStatCard(
-                        title: 'ACTIVE AUTOMATIONS',
-                        value: activeCount.toString().padLeft(2, '0'),
-                        footerText: activeKpiFooter,
-                        footerColor: activeCount > 0 ? const Color(0xFF0D9488) : const Color(0xFF94A3B8),
-                        icon: Icons.bolt_rounded,
-                        iconBg: const Color(0xFFE6F7F5),
-                        iconColor: const Color(0xFF00A2A5),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
+                  SizedBox(height: isMobile ? 14 : 20),
 
-                    // Card 2: SAVED PLACES
-                    Expanded(
-                      child: _buildTopStatCard(
-                        title: 'SAVED PLACES',
-                        value: totalCount.toString().padLeft(2, '0'),
-                        footerText: '$totalCount places configured',
-                        footerColor: const Color(0xFF64748B),
-                        icon: Icons.bookmark_border_rounded,
-                        iconBg: const Color(0xFFE6F7F5),
-                        iconColor: const Color(0xFF00A2A5),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
+                  // ------------------------------------
+                  // ROW 2: RADAR CANVAS + UP NEXT PANEL
+                  // ------------------------------------
+                  if (isMobile || isTablet)
+                    Column(
+                      children: [
+                        _buildLiveGeofenceRadarCard(isMobile: isMobile),
+                        const SizedBox(height: 14),
+                        _buildUpNextPanelCard(rules, isMobile: isMobile),
+                      ],
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left: LIVE LOCATION (Flex 6)
+                        Expanded(
+                          flex: 6,
+                          child: _buildLiveGeofenceRadarCard(),
+                        ),
+                        const SizedBox(width: 20),
 
-                    // Card 3: LOCATION STATUS (Audit #6)
-                    Expanded(
-                      child: _buildTopStatCard(
-                        title: 'LOCATION STATUS',
-                        value: 'Ready',
-                        footerText: 'GPS active · ±8m',
-                        footerColor: const Color(0xFF0D9488),
-                        icon: Icons.filter_center_focus_rounded,
-                        iconBg: const Color(0xFFE6F7F5),
-                        iconColor: const Color(0xFF00A2A5),
-                      ),
+                        // Right: UP NEXT (Flex 4)
+                        Expanded(
+                          flex: 4,
+                          child: _buildUpNextPanelCard(rules),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              SizedBox(height: isMobile ? 14 : 20),
+                  SizedBox(height: isMobile ? 14 : 20),
 
-              // ------------------------------------
-              // ROW 2: RADAR CANVAS + UP NEXT PANEL (Audit #7, #8)
-              // ------------------------------------
-              if (isMobile || isTablet)
-                Column(
-                  children: [
-                    _buildLiveGeofenceRadarCard(isMobile: isMobile),
-                    const SizedBox(height: 14),
-                    _buildUpNextPanelCard(rules, isMobile: isMobile),
-                  ],
-                )
-              else
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left: LIVE LOCATION (Flex 6)
-                    Expanded(
-                      flex: 6,
-                      child: _buildLiveGeofenceRadarCard(),
-                    ),
-                    const SizedBox(width: 20),
+                  // ------------------------------------
+                  // ROW 3: SAVED PLACES + RECENT ACTIVITY
+                  // ------------------------------------
+                  if (isMobile || isTablet)
+                    Column(
+                      children: [
+                        _buildSavedPlacesBottomCard(rules, isMobile: isMobile),
+                        const SizedBox(height: 14),
+                        _buildRecentActivityBottomCard(isMobile: isMobile),
+                      ],
+                    )
+                  else
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Left: SAVED PLACES (Flex 6)
+                        Expanded(
+                          flex: 6,
+                          child: _buildSavedPlacesBottomCard(rules),
+                        ),
+                        const SizedBox(width: 20),
 
-                    // Right: UP NEXT (Flex 4) (Audit #7, #8)
-                    Expanded(
-                      flex: 4,
-                      child: _buildUpNextPanelCard(rules),
+                        // Right: RECENT ACTIVITY (Flex 4)
+                        Expanded(
+                          flex: 4,
+                          child: _buildRecentActivityBottomCard(),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              SizedBox(height: isMobile ? 14 : 20),
-
-              // ------------------------------------
-              // ROW 3: SAVED PLACES + RECENT ACTIVITY
-              // ------------------------------------
-              if (isMobile || isTablet)
-                Column(
-                  children: [
-                    _buildSavedPlacesBottomCard(rules, isMobile: isMobile),
-                    const SizedBox(height: 14),
-                    _buildRecentActivityBottomCard(isMobile: isMobile),
-                  ],
-                )
-              else
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Left: SAVED PLACES (Flex 6)
-                    Expanded(
-                      flex: 6,
-                      child: _buildSavedPlacesBottomCard(rules),
-                    ),
-                    const SizedBox(width: 20),
-
-                    // Right: RECENT ACTIVITY (Flex 4)
-                    Expanded(
-                      flex: 4,
-                      child: _buildRecentActivityBottomCard(),
-                    ),
-                  ],
-                ),
-            ],
-          ),
+                ],
+              ),
+            ),
+          ],
         );
       },
     );
   }
 
   // ==========================================
-  // TOP STAT CARD WIDGET
+  // REUSABLE GLASSMORPHIC CONTAINER
+  // ==========================================
+  Widget _buildGlassmorphicContainer({
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+    double? height,
+    double? width,
+    double borderRadius = 20,
+    List<Color>? gradientColors,
+    Color? borderColor,
+    bool glow = false,
+  }) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+        child: Container(
+          width: width,
+          height: height,
+          padding: padding ?? const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: gradientColors ?? [
+                Colors.white.withValues(alpha: 0.82),
+                Colors.white.withValues(alpha: 0.52),
+                Colors.white.withValues(alpha: 0.38),
+              ],
+              stops: const [0.0, 0.55, 1.0],
+            ),
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: borderColor ?? Colors.white.withValues(alpha: 0.95),
+              width: 1.5,
+            ),
+            boxShadow: [
+              // Ambient soft diffuse glow
+              BoxShadow(
+                color: (glow
+                        ? const Color(0xFF00A2A5)
+                        : const Color(0xFF0F172A))
+                    .withValues(alpha: glow ? 0.12 : 0.06),
+                blurRadius: 28,
+                spreadRadius: 0,
+                offset: const Offset(0, 10),
+              ),
+              // Crisp edge depth shadow
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // TOP STAT CARD WIDGET (Glassmorphism)
   // ==========================================
   Widget _buildTopStatCard({
     required String title,
@@ -870,13 +1268,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     required Color iconColor,
     bool isMobile = false,
   }) {
-    return Container(
+    return _buildGlassmorphicContainer(
       padding: EdgeInsets.all(isMobile ? 14 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5EBEF)),
-      ),
+      borderRadius: 18,
+      glow: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -899,11 +1294,22 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               ),
               const SizedBox(width: 6),
               Container(
-                width: isMobile ? 28 : 32,
-                height: isMobile ? 28 : 32,
+                width: isMobile ? 30 : 34,
+                height: isMobile ? 30 : 34,
                 decoration: BoxDecoration(
-                  color: iconBg,
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      iconColor.withValues(alpha: 0.18),
+                      iconColor.withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: iconColor.withValues(alpha: 0.25),
+                    width: 1,
+                  ),
                 ),
                 child: Icon(icon, color: iconColor, size: isMobile ? 16 : 18),
               ),
@@ -938,7 +1344,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   // ==========================================
   // RADAR CANVAS WIDGET (Live Location)
   // ==========================================
-  Widget _buildLiveGeofenceRadarCard({List<RuleModel>? rules, bool isMobile = false}) {
+  Widget _buildLiveGeofenceRadarCard(
+      {List<RuleModel>? rules, bool isMobile = false}) {
     final activeRules = rules ?? context.watch<RuleProvider>().rules;
     return LiveGeofenceRadarCard(
       rules: activeRules,
@@ -948,19 +1355,16 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // UP NEXT PANEL CARD (Audit #4, #7, #8)
+  // UP NEXT PANEL CARD (Glassmorphism)
   // ==========================================
-  Widget _buildUpNextPanelCard(List<RuleModel> rules, {bool isMobile = false}) {
+  Widget _buildUpNextPanelCard(List<RuleModel> rules,
+      {bool isMobile = false}) {
     final activeRules = rules.where((r) => r.isActive).toList();
 
-    return Container(
+    return _buildGlassmorphicContainer(
       height: isMobile ? null : 340,
       padding: EdgeInsets.all(isMobile ? 16 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5EBEF)),
-      ),
+      borderRadius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -995,44 +1399,60 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               ),
               InkWell(
                 onTap: () => setState(() => _selectedIndex = 1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6F7F5),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF00A2A5).withValues(alpha: 0.16),
+                        const Color(0xFF00A2A5).withValues(alpha: 0.06),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF00A2A5).withValues(alpha: 0.25),
+                    ),
                   ),
-                  child: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF007A7C), size: 18),
+                  child: const Icon(Icons.arrow_forward_rounded,
+                      color: Color(0xFF007A7C), size: 18),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // Dynamic Automation List or Empty State (Audit #4)
+          // Dynamic Automation List or Empty State
           if (activeRules.isEmpty)
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+              padding: const EdgeInsets.symmetric(
+                  vertical: 20, horizontal: 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFEEF2F6)),
+                color: Colors.white.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.8)),
               ),
               child: Center(
                 child: Column(
                   children: [
-                    const Icon(Icons.power_settings_new_rounded, color: Color(0xFF94A3B8), size: 28),
+                    const Icon(Icons.power_settings_new_rounded,
+                        color: Color(0xFF94A3B8), size: 28),
                     const SizedBox(height: 8),
                     const Text(
                       'No automations currently running',
-                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(height: 4),
                     const Text(
                       'Enable an automation below or create a new one to let GeoBuzz act automatically.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
+                      style:
+                          TextStyle(fontSize: 11.5, color: Color(0xFF64748B)),
                     ),
                   ],
                 ),
@@ -1041,29 +1461,37 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           else ...[
             _buildUpNextItem(
               title: activeRules[0].name,
-              subtitle: 'Arrive within ${activeRules[0].radius.toInt()} m of ${activeRules[0].location.name} → ${_formatActionHuman(activeRules[0].action)}',
+              subtitle:
+                  'Arrive within ${activeRules[0].radius.toInt()} m of ${activeRules[0].location.name} → ${_formatActionHuman(activeRules[0].action)}',
               icon: _getActionIcon(activeRules[0].action.type),
-              accentColor: _getActionAccentColor(activeRules[0].action.type),
+              accentColor:
+                  _getActionAccentColor(activeRules[0].action.type),
             ),
             if (activeRules.length > 1) ...[
               const SizedBox(height: 10),
               _buildUpNextItem(
                 title: activeRules[1].name,
-                subtitle: '${activeRules[1].trigger.type.displayName} within ${activeRules[1].radius.toInt()} m of ${activeRules[1].location.name} → ${_formatActionHuman(activeRules[1].action)}',
+                subtitle:
+                    '${activeRules[1].trigger.type.displayName} within ${activeRules[1].radius.toInt()} m of ${activeRules[1].location.name} → ${_formatActionHuman(activeRules[1].action)}',
                 icon: _getActionIcon(activeRules[1].action.type),
-                accentColor: _getActionAccentColor(activeRules[1].action.type),
+                accentColor:
+                    _getActionAccentColor(activeRules[1].action.type),
               ),
             ],
           ],
 
-          const Spacer(),
+          if (isMobile)
+            const SizedBox(height: 16)
+          else
+            const Spacer(),
 
           // + Create automation CTA
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: _openCreateWizard,
-              icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
+              icon:
+                  const Icon(Icons.add_rounded, size: 18, color: Colors.white),
               label: const Text(
                 'Create automation',
                 style: TextStyle(
@@ -1075,9 +1503,12 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00A2A5),
                 foregroundColor: Colors.white,
-                elevation: 0,
+                elevation: 3,
+                shadowColor:
+                    const Color(0xFF00A2A5).withValues(alpha: 0.35),
                 padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
@@ -1142,9 +1573,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
+        color: Colors.white.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEEF2F6)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.8)),
       ),
       child: Row(
         children: [
@@ -1152,8 +1583,14 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: accentColor.withValues(alpha: 0.12),
+              gradient: LinearGradient(
+                colors: [
+                  accentColor.withValues(alpha: 0.18),
+                  accentColor.withValues(alpha: 0.08),
+                ],
+              ),
               borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: accentColor.withValues(alpha: 0.25)),
             ),
             child: Icon(icon, color: accentColor, size: 17),
           ),
@@ -1207,16 +1644,13 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // BOTTOM ROW: SAVED PLACES CARD
+  // BOTTOM ROW: SAVED PLACES CARD (Glassmorphism)
   // ==========================================
-  Widget _buildSavedPlacesBottomCard(List<RuleModel> rules, {bool isMobile = false}) {
-    return Container(
+  Widget _buildSavedPlacesBottomCard(List<RuleModel> rules,
+      {bool isMobile = false}) {
+    return _buildGlassmorphicContainer(
       padding: EdgeInsets.all(isMobile ? 16 : 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5EBEF)),
-      ),
+      borderRadius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1263,19 +1697,38 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
 
           Row(
             children: [
-              // Card 1: Home (Mint background)
+              // Card 1: Home (Mint glass background)
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE3F7F5),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFFE3F7F5).withValues(alpha: 0.8),
+                        const Color(0xFFE3F7F5).withValues(alpha: 0.4),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      width: 1.2,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.home_outlined, color: Color(0xFF00A2A5), size: 20),
-                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.home_outlined,
+                            color: Color(0xFF00A2A5), size: 18),
+                      ),
+                      const SizedBox(height: 14),
                       Text(
                         rules.isNotEmpty ? rules[0].location.name : 'Home',
                         style: const TextStyle(
@@ -1288,7 +1741,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        rules.isNotEmpty ? '${rules[0].radius.toInt()} m radius' : '100 m radius',
+                        rules.isNotEmpty
+                            ? '${rules[0].radius.toInt()} m radius'
+                            : '100 m radius',
                         style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
@@ -1301,19 +1756,38 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               ),
               const SizedBox(width: 14),
 
-              // Card 2: Studio / Office (Slate background)
+              // Card 2: Studio / Office (Slate glass background)
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F7),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFFF1F5F7).withValues(alpha: 0.85),
+                        const Color(0xFFF1F5F7).withValues(alpha: 0.45),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.85),
+                      width: 1.2,
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.work_outline_rounded, color: Color(0xFF00A2A5), size: 20),
-                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.work_outline_rounded,
+                            color: Color(0xFF00A2A5), size: 18),
+                      ),
+                      const SizedBox(height: 14),
                       Text(
                         rules.length > 1 ? rules[1].location.name : 'Office',
                         style: const TextStyle(
@@ -1326,7 +1800,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        rules.length > 1 ? '${rules[1].radius.toInt()} m radius' : '100 m radius',
+                        rules.length > 1
+                            ? '${rules[1].radius.toInt()} m radius'
+                            : '100 m radius',
                         style: const TextStyle(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w500,
@@ -1345,19 +1821,15 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   }
 
   // ==========================================
-  // BOTTOM ROW: RECENT ACTIVITY CARD (Audit #9, #23, #24)
+  // BOTTOM ROW: RECENT ACTIVITY CARD (Glassmorphism)
   // ==========================================
   Widget _buildRecentActivityBottomCard({bool isMobile = false}) {
     final historyProvider = context.watch<HistoryProvider>();
     final history = historyProvider.history;
 
-    return Container(
+    return _buildGlassmorphicContainer(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5EBEF)),
-      ),
+      borderRadius: 18,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1389,15 +1861,24 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               ),
               InkWell(
                 onTap: () => setState(() => _selectedIndex = 3),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
-                  width: 32,
-                  height: 32,
+                  width: 34,
+                  height: 34,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE6F7F5),
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF00A2A5).withValues(alpha: 0.16),
+                        const Color(0xFF00A2A5).withValues(alpha: 0.06),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF00A2A5).withValues(alpha: 0.25),
+                    ),
                   ),
-                  child: const Icon(Icons.north_east_rounded, color: Color(0xFF007A7C), size: 18),
+                  child: const Icon(Icons.north_east_rounded,
+                      color: Color(0xFF007A7C), size: 18),
                 ),
               ),
             ],
@@ -1409,13 +1890,22 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF8B5CF6).withValues(alpha: 0.18),
+                      const Color(0xFF8B5CF6).withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
+                  ),
                 ),
-                child: const Icon(Icons.volume_off_rounded, color: Color(0xFF8B5CF6), size: 16),
+                child: const Icon(Icons.volume_off_rounded,
+                    color: Color(0xFF8B5CF6), size: 16),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1423,7 +1913,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.isNotEmpty ? history[0].ruleName : 'Office Silent Mode',
+                      history.isNotEmpty
+                          ? history[0].ruleName
+                          : 'Office Silent Mode',
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -1433,7 +1925,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     const SizedBox(height: 1),
                     Text(
                       history.isNotEmpty
-                          ? 'Arrived at ${history[0].locationName} · ${history[0].message ?? "Silent mode enabled"}'
+                          ? 'Arrived at ${history[0].locationName} · ${history[0].message}'
                           : 'Arrived at Office · Silent mode enabled',
                       style: const TextStyle(
                         fontSize: 11,
@@ -1447,7 +1939,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 history.isNotEmpty
                     ? DateFormat('hh:mm a').format(history[0].timestamp)
                     : '9:12 AM',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1458,13 +1953,22 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
-                width: 30,
-                height: 30,
+                width: 32,
+                height: 32,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF59E0B).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFFF59E0B).withValues(alpha: 0.18),
+                      const Color(0xFFF59E0B).withValues(alpha: 0.08),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.25),
+                  ),
                 ),
-                child: const Icon(Icons.alarm_rounded, color: Color(0xFFF59E0B), size: 16),
+                child: const Icon(Icons.alarm_rounded,
+                    color: Color(0xFFF59E0B), size: 16),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1472,7 +1976,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      history.length > 1 ? history[1].ruleName : 'Bus Stop Alert',
+                      history.length > 1
+                          ? history[1].ruleName
+                          : 'Bus Stop Alert',
                       style: const TextStyle(
                         fontSize: 12.5,
                         fontWeight: FontWeight.w700,
@@ -1482,7 +1988,7 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                     const SizedBox(height: 1),
                     Text(
                       history.length > 1
-                          ? 'Approaching ${history[1].locationName} · ${history[1].message ?? "Alarm triggered"}'
+                          ? 'Approaching ${history[1].locationName} · ${history[1].message}'
                           : 'Approaching Majestic Bus Stop · Alarm triggered',
                       style: const TextStyle(
                         fontSize: 11,
@@ -1496,7 +2002,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 history.length > 1
                     ? DateFormat('hh:mm a').format(history[1].timestamp)
                     : 'Yesterday',
-                style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8), fontWeight: FontWeight.w500),
+                style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w500),
               ),
             ],
           ),
@@ -1509,7 +2018,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
   // SECONDARY TABS (Automations, Map, Activity, Settings)
   // ==========================================
   String _automationFilter = 'All';
-  final TextEditingController _automationsSearchController = TextEditingController();
+  final TextEditingController _automationsSearchController =
+      TextEditingController();
 
   Widget _buildSecondaryTabView() {
     final ruleProvider = context.watch<RuleProvider>();
@@ -1553,19 +2063,33 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Automations', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Color(0xFF0F172A))),
+                      const Text('Automations',
+                          style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF0F172A))),
                       const SizedBox(height: 2),
-                      Text('${ruleProvider.activeCount} active · ${ruleProvider.rules.length} total', style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+                      Text(
+                          '${ruleProvider.activeCount} active · ${ruleProvider.rules.length} total',
+                          style: const TextStyle(
+                              fontSize: 13, color: Color(0xFF64748B))),
                     ],
                   ),
                   ElevatedButton.icon(
                     onPressed: _openCreateWizard,
-                    icon: const Icon(Icons.add_rounded, size: 18, color: Colors.white),
-                    label: const Text('Create automation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13.5)),
+                    icon: const Icon(Icons.add_rounded,
+                        size: 18, color: Colors.white),
+                    label: const Text('Create automation',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13.5)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF00A2A5),
-                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ],
@@ -1589,8 +2113,10 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         style: const TextStyle(fontSize: 13),
                         decoration: const InputDecoration(
                           hintText: 'Search automations or places...',
-                          hintStyle: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
-                          prefixIcon: Icon(Icons.search_rounded, size: 18, color: Color(0xFF64748B)),
+                          hintStyle:
+                              TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+                          prefixIcon: Icon(Icons.search_rounded,
+                              size: 18, color: Color(0xFF64748B)),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(vertical: 10),
                         ),
@@ -1605,7 +2131,15 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: ['All', 'Active', 'Paused', 'Alarm', 'Sound', 'Wi-Fi', 'Reminder'].map((filter) {
+                  children: [
+                    'All',
+                    'Active',
+                    'Paused',
+                    'Alarm',
+                    'Sound',
+                    'Wi-Fi',
+                    'Reminder'
+                  ].map((filter) {
                     final isSelected = _automationFilter == filter;
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
@@ -1614,13 +2148,19 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         selected: isSelected,
                         selectedColor: const Color(0xFF00A2A5),
                         backgroundColor: Colors.white,
-                        side: BorderSide(color: isSelected ? const Color(0xFF00A2A5) : const Color(0xFFE2E8F0)),
+                        side: BorderSide(
+                            color: isSelected
+                                ? const Color(0xFF00A2A5)
+                                : const Color(0xFFE2E8F0)),
                         labelStyle: TextStyle(
-                          color: isSelected ? Colors.white : const Color(0xFF475569),
+                          color: isSelected
+                              ? Colors.white
+                              : const Color(0xFF475569),
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
-                        onSelected: (_) => setState(() => _automationFilter = filter),
+                        onSelected: (_) =>
+                            setState(() => _automationFilter = filter),
                       ),
                     );
                   }).toList(),
@@ -1657,12 +2197,21 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         return ListView(
           padding: const EdgeInsets.all(28),
           children: [
-            const Text('Activity History', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const Text('Activity History',
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A))),
             const SizedBox(height: 16),
             if (historyProvider.history.isEmpty)
-              const Center(child: Padding(padding: EdgeInsets.all(40), child: Text('No events recorded yet', style: TextStyle(color: Color(0xFF64748B)))))
+              const Center(
+                  child: Padding(
+                      padding: EdgeInsets.all(40),
+                      child: Text('No events recorded yet',
+                          style: TextStyle(color: Color(0xFF64748B)))))
             else
-              ...historyProvider.history.map((item) => _buildCleanHistoryCard(item)),
+              ...historyProvider.history
+                  .map((item) => _buildCleanHistoryCard(item)),
           ],
         );
 
@@ -1670,11 +2219,22 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         return ListView(
           padding: const EdgeInsets.all(28),
           children: [
-            const Text('Settings', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+            const Text('Settings',
+                style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F172A))),
             const SizedBox(height: 16),
-            _buildCleanSettingsTile('High Precision Location', 'Continuous ±8m accuracy evaluation', Icons.gps_fixed_rounded),
-            _buildCleanSettingsTile('Background Service', 'Runs reliably in background without interruption', Icons.battery_charging_full_rounded),
-            _buildCleanSettingsTile('Sound & Do Not Disturb Access', 'Allows sound mode switching', Icons.do_not_disturb_on_outlined),
+            _buildCleanSettingsTile('High Precision Location',
+                'Continuous ±8m accuracy evaluation', Icons.gps_fixed_rounded),
+            _buildCleanSettingsTile(
+                'Background Service',
+                'Runs reliably in background without interruption',
+                Icons.battery_charging_full_rounded),
+            _buildCleanSettingsTile(
+                'Sound & Do Not Disturb Access',
+                'Allows sound mode switching',
+                Icons.do_not_disturb_on_outlined),
           ],
         );
 
@@ -1702,7 +2262,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   color: const Color(0xFF00A2A5),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 16),
+                child: const Icon(Icons.auto_awesome_rounded,
+                    color: Colors.white, size: 16),
               ),
               const SizedBox(width: 10),
               const Text(
@@ -1725,10 +2286,14 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             spacing: 10,
             runSpacing: 10,
             children: [
-              _buildTemplateChip('Work Silence', 'Office · Arrive → Silent', Icons.volume_off_rounded, const Color(0xFF8B5CF6)),
-              _buildTemplateChip('Bus Stop Alert', 'Transit · Approach → Alarm', Icons.alarm_rounded, const Color(0xFFF59E0B)),
-              _buildTemplateChip('Home Wi-Fi', 'Home · Arrive → Wi-Fi', Icons.wifi_rounded, const Color(0xFF3B82F6)),
-              _buildTemplateChip('Grocery Note', 'Market · Arrive → Note', Icons.notifications_active_rounded, const Color(0xFF10B981)),
+              _buildTemplateChip('Work Silence', 'Office · Arrive → Silent',
+                  Icons.volume_off_rounded, const Color(0xFF8B5CF6)),
+              _buildTemplateChip('Bus Stop Alert', 'Transit · Approach → Alarm',
+                  Icons.alarm_rounded, const Color(0xFFF59E0B)),
+              _buildTemplateChip('Home Wi-Fi', 'Home · Arrive → Wi-Fi',
+                  Icons.wifi_rounded, const Color(0xFF3B82F6)),
+              _buildTemplateChip('Grocery Note', 'Market · Arrive → Note',
+                  Icons.notifications_active_rounded, const Color(0xFF10B981)),
             ],
           ),
         ],
@@ -1736,7 +2301,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
     );
   }
 
-  Widget _buildTemplateChip(String title, String subtitle, IconData icon, Color accent) {
+  Widget _buildTemplateChip(
+      String title, String subtitle, IconData icon, Color accent) {
     return InkWell(
       onTap: _openCreateWizard,
       borderRadius: BorderRadius.circular(10),
@@ -1756,8 +2322,14 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12, color: Color(0xFF0F172A))),
-                Text(subtitle, style: const TextStyle(fontSize: 10.5, color: Color(0xFF64748B))),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                        color: Color(0xFF0F172A))),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontSize: 10.5, color: Color(0xFF64748B))),
               ],
             ),
           ],
@@ -1793,7 +2365,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
               color: accent.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(_getActionIcon(rule.action.type), color: accent, size: 20),
+            child:
+                Icon(_getActionIcon(rule.action.type), color: accent, size: 20),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -1804,13 +2377,19 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                   children: [
                     Text(
                       rule.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, color: Color(0xFF0F172A)),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 14.5,
+                          color: Color(0xFF0F172A)),
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: rule.isActive ? const Color(0xFFECFDF5) : const Color(0xFFF1F5F9),
+                        color: rule.isActive
+                            ? const Color(0xFFECFDF5)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -1818,7 +2397,9 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: rule.isActive ? const Color(0xFF059669) : const Color(0xFF64748B),
+                          color: rule.isActive
+                              ? const Color(0xFF059669)
+                              : const Color(0xFF64748B),
                         ),
                       ),
                     ),
@@ -1827,19 +2408,25 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
                 const SizedBox(height: 3),
                 Text(
                   'When I ${rule.trigger.type.displayName.toLowerCase()} within ${rule.radius.toInt()} m of ${rule.location.name} → ${_formatActionHuman(rule.action)}',
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
+                  style:
+                      const TextStyle(fontSize: 12, color: Color(0xFF64748B)),
                 ),
               ],
             ),
           ),
           const SizedBox(width: 10),
-          Transform.scale(
-            scale: 0.8,
-            child: Switch(
-              value: rule.isActive,
-              activeTrackColor: const Color(0xFF00A2A5),
-              activeThumbColor: Colors.white,
-              onChanged: (val) => context.read<RuleProvider>().toggleRule(rule.id, val),
+          SizedBox(
+            height: 28,
+            width: 44,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Switch(
+                value: rule.isActive,
+                activeTrackColor: const Color(0xFF00A2A5),
+                activeThumbColor: Colors.white,
+                onChanged: (val) =>
+                    context.read<RuleProvider>().toggleRule(rule.id, val),
+              ),
             ),
           ),
         ],
@@ -1858,18 +2445,26 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 18),
+          const Icon(Icons.check_circle_rounded,
+              color: Color(0xFF10B981), size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${item.ruleName} (${item.triggerType})', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A))),
-                Text(item.message, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                Text('${item.ruleName} (${item.triggerType})',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Color(0xFF0F172A))),
+                Text(item.message,
+                    style: const TextStyle(
+                        fontSize: 11.5, color: Color(0xFF64748B))),
               ],
             ),
           ),
-          Text(DateFormat('hh:mm a').format(item.timestamp), style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+          Text(DateFormat('hh:mm a').format(item.timestamp),
+              style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
         ],
       ),
     );
@@ -1892,12 +2487,19 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A))),
-                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                Text(title,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF0F172A))),
+                Text(subtitle,
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFF64748B))),
               ],
             ),
           ),
-          const Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 20),
+          const Icon(Icons.check_circle_rounded,
+              color: Color(0xFF10B981), size: 20),
         ],
       ),
     );
@@ -1913,17 +2515,27 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
       ),
       child: Column(
         children: [
-          const Icon(Icons.add_location_alt_outlined, size: 40, color: Color(0xFF00A2A5)),
+          const Icon(Icons.add_location_alt_outlined,
+              size: 40, color: Color(0xFF00A2A5)),
           const SizedBox(height: 12),
-          const Text('No automations found', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF0F172A))),
+          const Text('No automations found',
+              style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: Color(0xFF0F172A))),
           const SizedBox(height: 4),
-          const Text('Create an automation to take action when you arrive, leave, or approach a place.', style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
+          const Text(
+              'Create an automation to take action when you arrive, leave, or approach a place.',
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 13)),
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: _openCreateWizard,
             icon: const Icon(Icons.add_rounded, size: 16, color: Colors.white),
-            label: const Text('Create automation', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00A2A5)),
+            label: const Text('Create automation',
+                style: TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00A2A5)),
           ),
         ],
       ),
@@ -2012,7 +2624,8 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
           ),
           const SizedBox(width: 6),
           IconButton(
-            icon: const Icon(Icons.search_rounded, color: Color(0xFF64748B), size: 22),
+            icon: const Icon(Icons.search_rounded,
+                color: Color(0xFF64748B), size: 22),
             onPressed: _openCommandPalette,
             tooltip: 'Search (⌘K)',
           ),
@@ -2027,16 +2640,21 @@ class _ResponsiveScaffoldState extends State<ResponsiveScaffold> {
         onTap: (idx) => setState(() => _selectedIndex = idx),
         selectedItemColor: const Color(0xFF00A2A5),
         unselectedItemColor: const Color(0xFF64748B),
-        selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
-        unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
+        selectedLabelStyle:
+            const TextStyle(fontWeight: FontWeight.w700, fontSize: 11),
+        unselectedLabelStyle:
+            const TextStyle(fontWeight: FontWeight.w500, fontSize: 11),
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         elevation: 8,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.bolt_rounded), label: 'Automations'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.grid_view_rounded), label: 'Home'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.bolt_rounded), label: 'Automations'),
           BottomNavigationBarItem(icon: Icon(Icons.map_outlined), label: 'Map'),
-          BottomNavigationBarItem(icon: Icon(Icons.show_chart_rounded), label: 'Activity'),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.show_chart_rounded), label: 'Activity'),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -2112,124 +2730,138 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                 ? LatLng(pos.latitude, pos.longitude)
                 : const LatLng(12.9716, 77.5946); // Default Bengaluru coords
 
-            final activeGeofences = widget.rules.where((r) => r.isActive).toList();
+            final activeGeofences =
+                widget.rules.where((r) => r.isActive).toList();
 
             return Stack(
               children: [
                 // 1. Live Interactive FlutterMap
-                FlutterMap(
-                  mapController: _mapController,
-                  options: MapOptions(
-                    initialCenter: userLoc,
-                    initialZoom: 14.5,
-                    minZoom: 4,
-                    maxZoom: 18,
-                    interactionOptions: const InteractionOptions(
-                      flags: InteractiveFlag.all,
+                ExcludeSemantics(
+                  child: FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: userLoc,
+                      initialZoom: 14.5,
+                      minZoom: 4,
+                      maxZoom: 18,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.all,
+                      ),
                     ),
-                  ),
-                  children: [
-                    // OpenStreetMap CartoDB Positron / OSM Light Tiles
-                    TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.geobuzz.geobuzz',
-                    ),
+                    children: [
+                      // OpenStreetMap CartoDB Positron / OSM Light Tiles
+                      TileLayer(
+                        urlTemplate:
+                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                        userAgentPackageName: 'com.geobuzz.geobuzz',
+                      ),
 
-                    // Active Geofence Circles
-                    CircleLayer(
-                      circles: [
-                        // User GPS accuracy circle
-                        CircleMarker(
-                          point: userLoc,
-                          radius: 50,
-                          useRadiusInMeter: true,
-                          color: const Color(0xFF00A2A5).withValues(alpha: 0.18),
-                          borderColor: const Color(0xFF00A2A5),
-                          borderStrokeWidth: 1.5,
-                        ),
-                        // Geofence rules circles
-                        ...activeGeofences.map((rule) {
-                          return CircleMarker(
-                            point: LatLng(rule.location.latitude, rule.location.longitude),
-                            radius: rule.radius,
+                      // Active Geofence Circles
+                      CircleLayer(
+                        circles: [
+                          // User GPS accuracy circle
+                          CircleMarker(
+                            point: userLoc,
+                            radius: 50,
                             useRadiusInMeter: true,
-                            color: const Color(0xFF00A2A5).withValues(alpha: 0.12),
-                            borderColor: const Color(0xFF00A2A5).withValues(alpha: 0.6),
+                            color:
+                                const Color(0xFF00A2A5).withValues(alpha: 0.18),
+                            borderColor: const Color(0xFF00A2A5),
                             borderStrokeWidth: 1.5,
-                          );
-                        }),
-                      ],
-                    ),
-
-                    // Markers
-                    MarkerLayer(
-                      markers: [
-                        // User Current Location Pulse Marker
-                        Marker(
-                          point: userLoc,
-                          width: 44,
-                          height: 44,
-                          child: Center(
-                            child: Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: const Color(0xFF00A2A5).withValues(alpha: 0.25),
-                                  ),
-                                ),
-                                Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF00A2A5),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 3),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color(0xFF00A2A5).withValues(alpha: 0.6),
-                                        blurRadius: 8,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
                           ),
-                        ),
+                          // Geofence rules circles
+                          ...activeGeofences.map((rule) {
+                            return CircleMarker(
+                              point: LatLng(rule.location.latitude,
+                                  rule.location.longitude),
+                              radius: rule.radius,
+                              useRadiusInMeter: true,
+                              color: const Color(0xFF00A2A5)
+                                  .withValues(alpha: 0.12),
+                              borderColor: const Color(0xFF00A2A5)
+                                  .withValues(alpha: 0.6),
+                              borderStrokeWidth: 1.5,
+                            );
+                          }),
+                        ],
+                      ),
 
-                        // Active Geofences Pin Markers
-                        ...activeGeofences.map((rule) {
-                          return Marker(
-                            point: LatLng(rule.location.latitude, rule.location.longitude),
-                            width: 32,
-                            height: 32,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF00A2A5), width: 2),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.15),
-                                    blurRadius: 6,
+                      // Markers
+                      MarkerLayer(
+                        markers: [
+                          // User Current Location Pulse Marker
+                          Marker(
+                            point: userLoc,
+                            width: 44,
+                            height: 44,
+                            child: Center(
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Container(
+                                    width: 36,
+                                    height: 36,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: const Color(0xFF00A2A5)
+                                          .withValues(alpha: 0.25),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00A2A5),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: Colors.white, width: 3),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color(0xFF00A2A5)
+                                              .withValues(alpha: 0.6),
+                                          blurRadius: 8,
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.place_rounded,
-                                color: Color(0xFF00A2A5),
-                                size: 18,
-                              ),
                             ),
-                          );
-                        }),
-                      ],
-                    ),
-                  ],
+                          ),
+
+                          // Active Geofences Pin Markers
+                          ...activeGeofences.map((rule) {
+                            return Marker(
+                              point: LatLng(rule.location.latitude,
+                                  rule.location.longitude),
+                              width: 32,
+                              height: 32,
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                      color: const Color(0xFF00A2A5), width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color:
+                                          Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 6,
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.place_rounded,
+                                  color: Color(0xFF00A2A5),
+                                  size: 18,
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
 
                 // 2. Top-Left Overlay Pill: Live location · Bengaluru
@@ -2237,7 +2869,9 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                   top: widget.isMobile ? 10 : 14,
                   left: widget.isMobile ? 10 : 14,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 12, vertical: widget.isMobile ? 5 : 7),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: widget.isMobile ? 8 : 12,
+                        vertical: widget.isMobile ? 5 : 7),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.94),
                       borderRadius: BorderRadius.circular(20),
@@ -2352,7 +2986,9 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                   bottom: widget.isMobile ? 10 : 14,
                   left: widget.isMobile ? 10 : 14,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 10, vertical: widget.isMobile ? 4 : 6),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: widget.isMobile ? 8 : 10,
+                        vertical: widget.isMobile ? 4 : 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF0F172A).withValues(alpha: 0.88),
                       borderRadius: BorderRadius.circular(8),
@@ -2390,13 +3026,16 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                   bottom: widget.isMobile ? 10 : 14,
                   right: widget.isMobile ? 10 : 14,
                   child: Container(
-                    padding: EdgeInsets.symmetric(horizontal: widget.isMobile ? 8 : 10, vertical: widget.isMobile ? 4 : 6),
+                    padding: EdgeInsets.symmetric(
+                        horizontal: widget.isMobile ? 8 : 10,
+                        vertical: widget.isMobile ? 4 : 6),
                     decoration: BoxDecoration(
                       color: const Color(0xFF00A2A5),
                       borderRadius: BorderRadius.circular(8),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF00A2A5).withValues(alpha: 0.35),
+                          color:
+                              const Color(0xFF00A2A5).withValues(alpha: 0.35),
                           blurRadius: 8,
                         ),
                       ],
@@ -2404,7 +3043,9 @@ class _LiveGeofenceRadarCardState extends State<LiveGeofenceRadarCard> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.place_outlined, color: Colors.white, size: widget.isMobile ? 12 : 14),
+                        Icon(Icons.place_outlined,
+                            color: Colors.white,
+                            size: widget.isMobile ? 12 : 14),
                         const SizedBox(width: 4),
                         Text(
                           '${activeGeofences.length} ${activeGeofences.length == 1 ? "active place" : "active places"}',

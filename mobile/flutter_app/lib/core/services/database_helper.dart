@@ -15,14 +15,12 @@ class DatabaseHelper {
 
   static const String _webRulesKey = 'geobuzz_web_rules_v1';
   static const String _webHistoryKey = 'geobuzz_web_history_v1';
-  static const String _webStatesKey = 'geobuzz_web_states_v1';
 
   // Web in-memory fallback cache
   final List<RuleModel> _webRules = [];
   final Map<String, GeofenceState> _webStates = {};
   final List<HistoryItem> _webHistory = [];
   final Map<String, String> _webDeviceState = {};
-  bool _webLoaded = false;
 
   DatabaseHelper._init();
 
@@ -122,7 +120,6 @@ class DatabaseHelper {
           } catch (_) {}
         }
       }
-      _webLoaded = true;
     } catch (e) {
       debugPrint('Error loading web storage: $e');
     }
