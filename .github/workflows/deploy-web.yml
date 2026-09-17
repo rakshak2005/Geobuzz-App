@@ -29,18 +29,12 @@ jobs:
       - name: Copy vercel.json to build output
         run: cp mobile/flutter_app/web/vercel.json mobile/flutter_app/build/web/vercel.json
 
-      - name: Deploy to Vercel
-        uses: peaceiris/actions-gh-pages@v4
-        if: false
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: mobile/flutter_app/build/web
+      - name: Create Vercel project link
+        working-directory: mobile/flutter_app/build/web
+        run: |
+          mkdir -p .vercel
+          echo '{"orgId":"${{ secrets.VERCEL_ORG_ID }}","projectId":"${{ secrets.VERCEL_PROJECT_ID }}"}' > .vercel/project.json
 
-      - name: Deploy via Vercel Action
-        uses: BetaHuhn/deploy-to-vercel-action@v1
-        with:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-          PRODUCTION: true
-          WORKING_DIRECTORY: mobile/flutter_app/build/web
+      - name: Deploy to Vercel
+        working-directory: mobile/flutter_app/build/web
+        run: npx --yes vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
