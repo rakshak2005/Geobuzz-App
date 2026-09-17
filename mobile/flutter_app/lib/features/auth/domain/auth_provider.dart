@@ -3,6 +3,8 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
 
+import '../../../core/config/api_config.dart';
+
 class AuthProvider extends ChangeNotifier {
   static const String _tokenKey = 'jwt_auth_token';
   static const String _userKey = 'auth_user_name';
@@ -26,7 +28,7 @@ class AuthProvider extends ChangeNotifier {
   String? get authError => _authError;
 
   AuthProvider() {
-    final baseUrl = kIsWeb ? 'http://localhost:5000/api' : 'http://10.0.2.2:5000/api';
+    final baseUrl = ApiConfig.baseUrl;
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 10),

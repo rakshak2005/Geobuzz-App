@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/config/api_config.dart';
 import '../../../core/services/database_helper.dart';
 import '../../../core/services/rule_engine.dart';
 import '../../../shared/models/rule_model.dart';
@@ -25,7 +26,7 @@ class RuleProvider extends ChangeNotifier {
   int get activeCount => _rules.where((r) => r.isActive).length;
 
   RuleProvider() {
-    final baseUrl = kIsWeb ? 'http://localhost:5000/api' : 'http://10.0.2.2:5000/api';
+    final baseUrl = ApiConfig.baseUrl;
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 8),

@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../../../core/config/api_config.dart';
 import '../../../core/services/database_helper.dart';
 import '../../../shared/models/history_item.dart';
 
@@ -24,7 +25,7 @@ class HistoryProvider extends ChangeNotifier {
   String get filterType => _filterType;
 
   HistoryProvider() {
-    final baseUrl = kIsWeb ? 'http://localhost:5000/api' : 'http://10.0.2.2:5000/api';
+    final baseUrl = ApiConfig.baseUrl;
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
       connectTimeout: const Duration(seconds: 8),
