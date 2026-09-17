@@ -29,12 +29,13 @@ jobs:
       - name: Copy vercel.json to build output
         run: cp mobile/flutter_app/web/vercel.json mobile/flutter_app/build/web/vercel.json
 
-      - name: Create Vercel project link
-        working-directory: mobile/flutter_app/build/web
+      - name: Prepare Root Directory for Vercel
         run: |
-          mkdir -p .vercel
-          echo '{"orgId":"${{ secrets.VERCEL_ORG_ID }}","projectId":"${{ secrets.VERCEL_PROJECT_ID }}"}' > .vercel/project.json
+          mkdir -p mobile/flutter_app/mobile/flutter_app
+          cp -r mobile/flutter_app/build/web/* mobile/flutter_app/mobile/flutter_app/
+          mkdir -p mobile/flutter_app/.vercel
+          echo '{"orgId":"${{ secrets.VERCEL_ORG_ID }}","projectId":"${{ secrets.VERCEL_PROJECT_ID }}"}' > mobile/flutter_app/.vercel/project.json
 
       - name: Deploy to Vercel
-        working-directory: mobile/flutter_app/build/web
+        working-directory: mobile/flutter_app
         run: npx --yes vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
