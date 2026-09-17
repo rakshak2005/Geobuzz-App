@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:geolocator/geolocator.dart';
 
 import 'core/constants/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'features/auth/domain/auth_provider.dart';
-import 'features/auth/presentation/auth_screen.dart';
 import 'features/rules/domain/rule_provider.dart';
 import 'features/history/domain/history_provider.dart';
 import 'features/home/presentation/responsive_scaffold.dart';
-import 'features/onboarding/presentation/permission_onboarding_screen.dart';
+import 'features/onboarding/presentation/hero_onboarding_screen.dart';
 import 'shared/widgets/geobuzz_preloader.dart';
 
 void main() async {
@@ -61,29 +59,18 @@ class _SplashScreenState extends State<SplashScreen> {
     final authProvider = context.read<AuthProvider>();
     await authProvider.checkAuthStatus();
 
-    bool hasLocationPermission = false;
-    try {
-      final permission = await Geolocator.checkPermission();
-      hasLocationPermission =
-          permission == LocationPermission.always || permission == LocationPermission.whileInUse;
-    } catch (_) {
-      hasLocationPermission = false;
-    }
-
     if (!mounted) return;
 
-    if (!hasLocationPermission) {
+    if (authProvider.isAuthenticated) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => const PermissionOnboardingScreen(),
+          builder: (_) => const ResponsiveScaffold(),
         ),
       );
     } else {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => authProvider.isAuthenticated
-              ? const ResponsiveScaffold()
-              : const AuthScreen(),
+          builder: (_) => const HeroOnboardingScreen(),
         ),
       );
     }
