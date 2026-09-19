@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../shared/widgets/geobuzz_brand_logo.dart';
+import '../../onboarding/presentation/hero_onboarding_screen.dart';
 
 /// Local GeoBuzz auth palette (scoped to the login UI so the global app
 /// theme stays untouched).
@@ -92,12 +93,76 @@ class GeoBuzzTopBar extends StatelessWidget {
 
   final bool condensed;
 
+  void _goHome(BuildContext context) {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HeroOnboardingScreen()),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const GeoBuzzBrandLogo(size: 34, isDark: true),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Back to Home Button
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _goHome(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: const Color(0x1AFFFFFF),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0x3319E6DF),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.arrow_back_rounded,
+                        size: 16,
+                        color: kAuthCyan,
+                      ),
+                      if (!condensed) ...[
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Home',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: () => _goHome(context),
+                child: const GeoBuzzBrandLogo(size: 34, isDark: true),
+              ),
+            ),
+          ],
+        ),
         _PrivacyButton(condensed: condensed),
       ],
     );
