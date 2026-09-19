@@ -32,6 +32,25 @@
   </style>
 </head>
 <body>
+  <!-- Firebase App & Auth SDKs for Web -->
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-analytics-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBveZ0AiSefoGbXMqfu3uSVcg7U-WmshS0",
+      authDomain: "geobuzz-66a07.firebaseapp.com",
+      projectId: "geobuzz-66a07",
+      storageBucket: "geobuzz-66a07.firebasestorage.app",
+      messagingSenderId: "412427794699",
+      appId: "1:412427794699:web:701bec824254f288550a0e",
+      measurementId: "G-NPC2X01V0N"
+    };
+    if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+  </script>
+
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

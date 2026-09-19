@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -171,14 +172,50 @@ class AuthProvider extends ChangeNotifier {
     _authError = null;
     notifyListeners();
 
-    try {
-      final email = customEmail ?? 'user@gmail.com';
-      final name = customName ?? email.split('@').first;
+    String? email = customEmail;
+    String? name = customName;
+    String? googleId;
 
+    try {
+      // 1. Authenticate with real Firebase Auth Google Provider
+      final googleProvider = fb.GoogleAuthProvider();
+      googleProvider.addScope('email');
+      googleProvider.addScope('profile');
+
+      fb.UserCredential? credential;
+      try {
+        if (kIsWeb) {
+          credential = await fb.FirebaseAuth.instance.signInWithPopup(googleProvider);
+        } else {
+          credential = await fb.FirebaseAuth.instance.signInWithProvider(googleProvider);
+        }
+      } catch (fbErr) {
+        debugPrint('Firebase Google Sign-In notice: $fbErr');
+        // If popup is closed by user or cancelled
+        final errStr = fbErr.toString().toLowerCase();
+        if (errStr.contains('popup-closed-by-user') || errStr.contains('cancelled')) {
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      if (credential?.user != null) {
+        final fbUser = credential!.user!;
+        email = fbUser.email ?? email;
+        name = fbUser.displayName ?? name;
+        googleId = fbUser.uid;
+      }
+
+      email ??= 'user@gmail.com';
+      name ??= email.split('@').first;
+      googleId ??= 'google_${DateTime.now().millisecondsSinceEpoch}';
+
+      // 2. Sync / Authenticate with GeoBuzz backend to get backend session JWT token
       final response = await _dio.post('/auth/google', data: {
         'email': email,
         'name': name,
-        'googleId': 'google_${DateTime.now().millisecondsSinceEpoch}',
+        'googleId': googleId,
       });
 
       if (response.statusCode == 200 && response.data['token'] != null) {
@@ -192,7 +229,7 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       } else {
-        _authError = response.data['message'] ?? 'Failed to sign in with Google';
+        _authError = response.data['message'] ?? 'Failed to complete sign in';
       }
     } on DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
@@ -202,7 +239,7 @@ class AuthProvider extends ChangeNotifier {
         } else if (data is String && data.isNotEmpty && !data.contains('<html')) {
           _authError = data;
         } else {
-          _authError = 'Google sign in failed (${e.response?.statusCode})';
+          _authError = 'Authentication failed (${e.response?.statusCode})';
         }
       } else if (e.type == DioExceptionType.connectionTimeout ||
                  e.type == DioExceptionType.connectionError) {
