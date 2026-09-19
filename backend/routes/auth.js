@@ -123,6 +123,61 @@ router.post('/login', async (req, res) => {
       error: error.message
     });
   }
+// @route   POST /api/auth/google
+// @desc    Authenticate or register user via Google
+// @access  Public
+router.post('/google', async (req, res) => {
+  try {
+    const { email, name, googleId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Google email is required'
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const displayName = name ? name.trim() : cleanEmail.split('@')[0];
+
+    // Check if user exists
+    let result = await db.query('SELECT * FROM users WHERE email = $1', [cleanEmail]);
+    let user;
+
+    if (result.rows.length === 0) {
+      // Create user with a generated secure hash for password
+      const salt = await bcrypt.genSalt(10);
+      const generatedPass = await bcrypt.hash(`google_auth_${cleanEmail}_${googleId || 'auth'}`, salt);
+
+      const insertResult = await db.query(
+        'INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, name, email, created_at',
+        [displayName, cleanEmail, generatedPass]
+      );
+      user = insertResult.rows[0];
+    } else {
+      user = result.rows[0];
+    }
+
+    const token = generateToken(user.id);
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        createdAt: user.created_at
+      }
+    });
+  } catch (error) {
+    console.error('Google auth error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error authenticating with Google',
+      error: error.message
+    });
+  }
 });
 
 // @route   GET /api/auth/me

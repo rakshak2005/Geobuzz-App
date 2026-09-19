@@ -95,6 +95,36 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
+  Future<void> _signInWithGoogle() async {
+    final authProvider = context.read<AuthProvider>();
+    // Pre-fill email or let user pick/enter email if provided
+    final currentEmail = _emailController.text.trim();
+    final name = _nameController.text.trim();
+
+    final success = await authProvider.signInWithGoogle(
+      customEmail: currentEmail.isNotEmpty ? currentEmail : null,
+      customName: name.isNotEmpty ? name : null,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _inlineError = success ? null : authProvider.authError;
+    });
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Welcome, ${authProvider.userName ?? "User"}!'),
+          backgroundColor: const Color(0xFF10B981),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const ResponsiveScaffold()),
+      );
+    }
+  }
+
   void _forgotPassword() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -213,6 +243,7 @@ class _AuthScreenState extends State<AuthScreen> {
                                       ),
                                       onForgotPassword: _forgotPassword,
                                       onSubmit: _submit,
+                                      onGoogleSignIn: _signInWithGoogle,
                                     ),
                                   ),
                                 ],
@@ -264,6 +295,7 @@ class _AuthCard extends StatelessWidget {
     required this.onToggleRemember,
     required this.onForgotPassword,
     required this.onSubmit,
+    required this.onGoogleSignIn,
   });
 
   final bool isLogin;
@@ -284,6 +316,7 @@ class _AuthCard extends StatelessWidget {
   final ValueChanged<bool?> onToggleRemember;
   final VoidCallback onForgotPassword;
   final VoidCallback onSubmit;
+  final VoidCallback onGoogleSignIn;
 
   @override
   Widget build(BuildContext context) {
@@ -476,7 +509,14 @@ class _AuthCard extends StatelessWidget {
                     isLoading: isLoading,
                     onPressed: onSubmit,
                   ),
-                  const SizedBox(height: 13),
+                  const SizedBox(height: 14),
+                  const AuthDivider(),
+                  const SizedBox(height: 14),
+                  GoogleSignInButton(
+                    isLoading: isLoading,
+                    onPressed: onGoogleSignIn,
+                  ),
+                  const SizedBox(height: 14),
                   RichText(
                     textAlign: TextAlign.center,
                     text: const TextSpan(

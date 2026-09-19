@@ -678,6 +678,182 @@ class _PrimaryAuthButtonState extends State<PrimaryAuthButton> {
   }
 }
 
+/// Stylish divider between email authentication and social login
+class AuthDivider extends StatelessWidget {
+  const AuthDivider({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Text(
+            'or',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: Colors.white.withValues(alpha: 0.45),
+            ),
+          ),
+        ),
+        Expanded(
+          child: Container(
+            height: 1,
+            color: Colors.white.withValues(alpha: 0.12),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Google Sign-In button designed to match the dark theme and brand style
+class GoogleSignInButton extends StatefulWidget {
+  const GoogleSignInButton({
+    super.key,
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  State<GoogleSignInButton> createState() => _GoogleSignInButtonState();
+}
+
+class _GoogleSignInButtonState extends State<GoogleSignInButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = !widget.isLoading && widget.onPressed != null;
+
+    return MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        height: 48,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: _hovered
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(
+            color: _hovered
+                ? Colors.white.withValues(alpha: 0.35)
+                : Colors.white.withValues(alpha: 0.16),
+            width: 1.1,
+          ),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(13),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(13),
+            onTap: enabled ? widget.onPressed : null,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Clean Custom Google G Icon
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CustomPaint(
+                    painter: _GoogleIconPainter(),
+                  ),
+                ),
+                const SizedBox(width: 11),
+                const Text(
+                  'Continue with Google',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _GoogleIconPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    // Google 'G' 4-color curves approximation
+    final redPaint = Paint()..color = const Color(0xFFEA4335)..style = PaintingStyle.fill;
+    final bluePaint = Paint()..color = const Color(0xFF4285F4)..style = PaintingStyle.fill;
+    final greenPaint = Paint()..color = const Color(0xFF34A853)..style = PaintingStyle.fill;
+    final yellowPaint = Paint()..color = const Color(0xFFFBBC05)..style = PaintingStyle.fill;
+
+    final center = Offset(w / 2, h / 2);
+    final radius = w / 2;
+
+    // Background circle clip
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // Blue horizontal bar & right curve
+    final bluePath = Path()
+      ..moveTo(center.dx, center.dy - radius * 0.22)
+      ..lineTo(center.dx + radius * 0.95, center.dy - radius * 0.22)
+      ..arcTo(rect, -0.2, 1.4, false)
+      ..lineTo(center.dx, center.dy)
+      ..close();
+    canvas.drawPath(bluePath, bluePaint);
+
+    // Red top arc
+    final redPath = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(rect, -2.4, 1.8, false)
+      ..close();
+    canvas.drawPath(redPath, redPaint);
+
+    // Yellow left arc
+    final yellowPath = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(rect, 2.4, 1.5, false)
+      ..close();
+    canvas.drawPath(yellowPath, yellowPaint);
+
+    // Green bottom arc
+    final greenPath = Path()
+      ..moveTo(center.dx, center.dy)
+      ..arcTo(rect, 0.7, 1.7, false)
+      ..close();
+    canvas.drawPath(greenPath, greenPaint);
+
+    // Inner cutout to make it a 'G'
+    final innerPaint = Paint()..color = const Color(0xFF141923)..style = PaintingStyle.fill;
+    canvas.drawCircle(center, radius * 0.58, innerPaint);
+
+    // Right crossbar cutout
+    final barPath = Path()
+      ..addRect(Rect.fromLTWH(center.dx, center.dy - radius * 0.2, radius * 0.95, radius * 0.4));
+    canvas.drawPath(barPath, bluePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
 /// Compact inline auth error (replaces the oversized red SnackBar).
 /// Collapses to zero height when [message] is null.
 class AuthInlineError extends StatelessWidget {

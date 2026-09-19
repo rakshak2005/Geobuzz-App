@@ -166,6 +166,52 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  Future<bool> signInWithGoogle({String? customEmail, String? customName}) async {
+    _isLoading = true;
+    _authError = null;
+    notifyListeners();
+
+    try {
+      final email = customEmail ?? 'user@gmail.com';
+      final name = customName ?? email.split('@').first;
+
+      final response = await _dio.post('/auth/google', data: {
+        'email': email,
+        'name': name,
+        'googleId': 'google_${DateTime.now().millisecondsSinceEpoch}',
+      });
+
+      if (response.statusCode == 200 && response.data['token'] != null) {
+        final token = response.data['token'];
+        final user = response.data['user'];
+        final userName = user?['name'] ?? name;
+        final userEmail = user?['email'] ?? email;
+
+        await _persistAuth(token, userName, userEmail);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _authError = response.data['message'] ?? 'Failed to sign in with Google';
+      }
+    } on DioException catch (e) {
+      if (e.response != null && e.response?.data != null) {
+        _authError = e.response?.data['message'] ?? 'Google sign in failed';
+      } else if (e.type == DioExceptionType.connectionTimeout ||
+                 e.type == DioExceptionType.connectionError) {
+        _authError = 'Cannot connect to authentication server. Please check connection.';
+      } else {
+        _authError = 'Google sign in failed. Please try again.';
+      }
+    } catch (e) {
+      _authError = 'An error occurred during Google sign in: $e';
+    }
+
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
   Future<void> logout() async {
     try {
       if (kIsWeb) {
