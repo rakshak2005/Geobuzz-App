@@ -32,7 +32,7 @@ class GeoBuzzApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.lightTheme,
         themeMode: ThemeMode.light, // Default to clean present light theme
-        home: const SplashScreen(),
+        home: const HeroOnboardingScreen(),
       ),
     );
   }
