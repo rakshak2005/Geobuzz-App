@@ -196,7 +196,14 @@ class AuthProvider extends ChangeNotifier {
       }
     } on DioException catch (e) {
       if (e.response != null && e.response?.data != null) {
-        _authError = e.response?.data['message'] ?? 'Google sign in failed';
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          _authError = data['message'].toString();
+        } else if (data is String && data.isNotEmpty && !data.contains('<html')) {
+          _authError = data;
+        } else {
+          _authError = 'Google sign in failed (${e.response?.statusCode})';
+        }
       } else if (e.type == DioExceptionType.connectionTimeout ||
                  e.type == DioExceptionType.connectionError) {
         _authError = 'Cannot connect to authentication server. Please check connection.';

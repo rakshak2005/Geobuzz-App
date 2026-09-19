@@ -123,6 +123,8 @@ router.post('/login', async (req, res) => {
       error: error.message
     });
   }
+});
+
 // @route   POST /api/auth/google
 // @desc    Authenticate or register user via Google
 // @access  Public
