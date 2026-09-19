@@ -5,6 +5,9 @@ class GeoBuzzPreloader extends StatefulWidget {
   final double size;
   final String? message;
 
+  /// Control flag to hide/show preloader (kept hidden until requested).
+  static const bool enabled = false;
+
   const GeoBuzzPreloader({
     super.key,
     this.size = 110.0,
@@ -46,6 +49,10 @@ class _GeoBuzzPreloaderState extends State<GeoBuzzPreloader>
 
   @override
   Widget build(BuildContext context) {
+    if (!GeoBuzzPreloader.enabled) {
+      return const SizedBox.shrink();
+    }
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
