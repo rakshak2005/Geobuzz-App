@@ -102,37 +102,7 @@ class _HeroOnboardingScreenState extends State<HeroOnboardingScreen>
     );
   }
 
-  void _showContactDialog() {
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: const Color(0xFF101014),
-        title: const Text(
-          'Contact Sales',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
-          ),
-        ),
-        content: const Text(
-          'Tell us where your day takes you. We will help you shape GeoBuzz around it.',
-          style: TextStyle(color: Color(0xFFD9D9D9), height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Close',
-              style: TextStyle(
-                  color: Color(0xFFA78BFA), fontWeight: FontWeight.w700),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   double _unit(Size size) {
     if (size.width <= 552) return 1;
@@ -258,15 +228,7 @@ class _HeroOnboardingScreenState extends State<HeroOnboardingScreen>
                 ),
               ),
               if (isDesktop) ...[
-                Expanded(
-                  child: Align(
-                    alignment: const Alignment(-0.14, 0),
-                    child: Transform.translate(
-                      offset: Offset(-23 * unit, 0),
-                      child: _buildDesktopLinks(unit),
-                    ),
-                  ),
-                ),
+                const Spacer(),
                 _buildDesktopActions(unit),
               ] else ...[
                 const Spacer(),
@@ -285,33 +247,7 @@ class _HeroOnboardingScreenState extends State<HeroOnboardingScreen>
     );
   }
 
-  Widget _buildDesktopLinks(double unit) {
-    const labels = <String>[
-      'Products',
-      'Pricing',
-      'Developers',
-      'Resources',
-      'Contact Sales',
-    ];
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(
-        labels.length,
-        (index) => _Reveal(
-          controller: _entranceController,
-          start: 0.54 + index * 0.045,
-          duration: 0.55,
-          slideY: 9 * unit,
-          child: _NavLink(
-            label: labels[index],
-            color: const Color(0xFFEDEDED),
-            onTap:
-                labels[index] == 'Contact Sales' ? _showContactDialog : () {},
-          ),
-        ),
-      ),
-    );
-  }
+
 
   Widget _buildDesktopActions(double unit) {
     return Row(
@@ -604,18 +540,6 @@ class _HeroOnboardingScreenState extends State<HeroOnboardingScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      _buildMenuItem('Products', () {}),
-                      _buildMenuItem('Pricing', () {}),
-                      _buildMenuItem('Developers', () {}),
-                      _buildMenuItem('Resources', () {}),
-                      _buildMenuItem('Contact Sales', _showContactDialog),
-                      const SizedBox(height: 8),
-                      Container(
-                        height: 1,
-                        margin: const EdgeInsets.symmetric(horizontal: 14),
-                        color: Colors.white.withValues(alpha: 0.08),
-                      ),
-                      const SizedBox(height: 8),
                       _buildMenuItem('Login', _openAuth),
                       const SizedBox(height: 6),
                       _ActionButton(
